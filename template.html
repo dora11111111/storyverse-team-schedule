@@ -26,11 +26,11 @@ input[type=date],input[type=time],input[type=number],input[type=text],select{fon
 textarea{font:inherit;width:100%;resize:none;border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-height:36px;background:#fff;color:var(--ink);overflow:hidden}
 textarea:focus,input:focus,select:focus{outline:2px solid var(--accs);border-color:var(--acc)}
 /* banner */
-#banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:16px}
+#banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-bottom:16px}
 .team{border-radius:var(--r);padding:14px 16px;border:1px solid var(--line);background:#fff}
 .team.ok{background:var(--grns);border-color:#a7f3d0}.team.warn{background:var(--ambs);border-color:#fcd34d}.team.late{background:var(--reds);border-color:#fca5a5}.team.idle{background:#fff}
-.team h3{margin:0 0 4px;font-size:15px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
-.team .cd{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px}
+.team h3{margin:0 0 4px;font-size:15px;display:flex;flex-direction:column;gap:2px}
+.team .cd{font-variant-numeric:tabular-nums;font-weight:700;font-size:19px}
 .team.late .cd{color:var(--red)}.team.warn .cd{color:var(--amb)}.team.ok .cd{color:var(--grn)}
 .team .meta{color:var(--mute);font-size:12px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -46,7 +46,6 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accs);border-col
 .person.missing{background:#fff7f7}
 .person .nm{font-weight:600;display:flex;flex-direction:column}
 .badge{font-size:11px;font-weight:500;color:var(--mute)}
-.badge.US{color:#2563eb}.badge.China{color:#c2410c}
 .offbtn{min-width:56px}.offbtn.on{background:#334155;color:#fff;border-color:#334155}
 .person.isoff textarea{background:#f1f5f9;color:var(--mute)}
 .status{font-size:12px;color:var(--mute)}
@@ -71,7 +70,7 @@ table.wk{border-collapse:separate;border-spacing:0;min-width:900px;width:100%}
 /* settings */
 .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mute);margin-bottom:10px}
-.plist .pi{display:grid;grid-template-columns:28px 1fr 110px auto;gap:8px;align-items:center;margin-bottom:6px}
+.plist .pi{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(0,100px) auto;gap:8px;align-items:center;margin-bottom:6px}
 .plist input[type=color]{width:28px;height:28px;border:0;padding:0;background:none;cursor:pointer}
 h2{font-size:16px;margin:0 0 12px}
 .hint{font-size:12px;color:var(--mute)}
@@ -139,8 +138,10 @@ code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
  <section id="v-settings" class="hidden">
   <div class="sgrid">
    <div class="card">
-    <h2>Deadlines <span class="zh">截止时间</span></h2>
+    <h2>Teams &amp; deadlines <span class="zh">团队 · 截止时间</span></h2>
+    <p class="hint">Each team's tasks for a workday are due by this local time, in that team's time zone, on the same day.</p>
     <div id="sDeadlines"></div>
+    <div class="row" style="margin:4px 0 14px"><button class="btn sm" id="sAddTeam">+ Add team <span class="zh">添加团队</span></button><button class="btn sm" id="sResetTeams">Restore default teams</button></div>
     <label class="f"><span><input type="checkbox" id="sSkipWe"> Skip weekends (Sat/Sun) <span class="zh">周末不提醒</span></span></label>
     <label class="f">Heads-up before deadline (minutes) <span class="zh">提前提醒(分钟)</span><input type="number" id="sHeads" min="0" max="600"></label>
     <label class="f"><span><input type="checkbox" id="sSound"> Play alert sound <span class="zh">提醒声音</span></span></label>
@@ -156,7 +157,7 @@ code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
     <div class="plist" id="sPeople"></div>
     <div class="row" style="margin-top:8px">
      <input type="text" id="sNewName" placeholder="New member name">
-     <select id="sNewTeam"><option>China</option><option>US</option></select>
+     <select id="sNewTeam"></select>
      <button class="btn" id="sAdd">Add <span class="zh">添加</span></button>
     </div>
    </div>
@@ -181,24 +182,30 @@ code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
 // Default team for each person ('China' or 'US'). Changes made in Settings
 // are saved in the browser and take priority over these defaults.
 const TEAM_DEFAULTS = {
-  'Xueyuan': 'China', 'Runrun': 'China', 'Weiwei': 'China', 'Steven': 'China',
-  'Emily G': 'China', 'Sally': 'China', 'Muyi': 'China',
+  'Xueyuan': 'China', 'Weiwei': 'China', 'Steven': 'China', 'Emily G': 'China',
+  'Sally': 'China', 'Muyi': 'China',
+  'Runrun': 'London',
   'Nicola': 'US', 'Lucia': 'US', 'Christy': 'US', 'Emily W': 'US',
+  'Kathy': 'Intern', 'Emily Y': 'Intern',
 };
 const DEFAULT_TEAM = 'China'; // for anyone not listed above
-// Deadline: a person's task for a workday must be entered before this local time
-// on that same day, in that team's time zone. Editable in Settings.
-const DEADLINE_DEFAULTS = {
-  China: { time: '18:00', tz: 'Asia/Shanghai' },
-  US:    { time: '10:00', tz: 'America/Los_Angeles' },
-};
+// Teams and their deadlines: a person's task for a workday must be entered before
+// `time` on that same day in `tz` (IANA time zone). Any number of teams; editable in Settings.
+// `id` is the stable key used in TEAM_DEFAULTS; name/label/icon/color are display only.
+const TEAMS_DEFAULT = [
+  { id: 'China',  name: 'China',  label: '中国组', icon: '🇨🇳', color: '#c2410c', time: '18:00', tz: 'Asia/Shanghai' },
+  { id: 'US',     name: 'US',     label: '美国组', icon: '🇺🇸', color: '#2563eb', time: '10:00', tz: 'America/Los_Angeles' },
+  { id: 'London', name: 'London', label: '伦敦组', icon: '🇬🇧', color: '#7c3aed', time: '18:00', tz: 'Asia/Shanghai' },
+  { id: 'Intern', name: 'Intern', label: '实习生', icon: '🎓', color: '#0d9488', time: '10:00', tz: 'America/Los_Angeles' },
+];
+// Bump these when the defaults above change; old browsers get migrated on load (tasks are kept).
+const DATA_VERSION = 2, SETTINGS_VERSION = 2;
 const SETTINGS_DEFAULTS = { skipWeekends: true, headsUpMin: 30, sound: true };
 const PALETTE = ['#6366f1','#ec4899','#14b8a6','#f97316','#8b5cf6','#0ea5e9','#22c55e','#eab308','#ef4444','#06b6d4','#a855f7','#84cc16','#f43f5e','#3b82f6'];
 /* ================================================================== */
 
 const SEED = /*SEED_JSON*/null;
 const LS_DATA = 'storyverse.schedule.data.v1', LS_SET = 'storyverse.schedule.settings.v1', LS_FIRED = 'storyverse.schedule.fired.v1';
-const TEAMS = ['China','US'];
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -240,22 +247,53 @@ const fmtTime = (date, tz) => new Intl.DateTimeFormat('en-US', { timeZone: tz, w
 const prettyDate = s => { const d = parseYmd(s); return `${DOW[d.getDay()]} ${MON[d.getMonth()].charAt(0)+MON[d.getMonth()].slice(1).toLowerCase()} ${d.getDate()}, ${d.getFullYear()} · 周${DOWZH[d.getDay()]}`; };
 
 /* ---------- state ---------- */
+const seedPeople = () => { const n = [...(SEED ? SEED.people : [])]; for (const k in TEAM_DEFAULTS) if (!n.includes(k)) n.push(k); return n; };
 function freshData() {
   const s = SEED || { people: [], tasks: {}, delivery: {}, weekNotes: {} };
   return {
-    people: s.people.map((n, i) => ({ name: n, team: TEAM_DEFAULTS[n] || DEFAULT_TEAM, color: PALETTE[i % PALETTE.length] })),
+    people: seedPeople().map((n, i) => ({ name: n, team: TEAM_DEFAULTS[n] || DEFAULT_TEAM, color: PALETTE[i % PALETTE.length] })),
     tasks: JSON.parse(JSON.stringify(s.tasks)), delivery: { ...s.delivery },
-    weekNotes: JSON.parse(JSON.stringify(s.weekNotes || {})), stamps: {}, version: 1,
+    weekNotes: JSON.parse(JSON.stringify(s.weekNotes || {})), stamps: {}, version: DATA_VERSION,
   };
 }
-function loadData() { try { const d = JSON.parse(localStorage.getItem(LS_DATA)); if (d && d.people) return { stamps:{}, weekNotes:{}, ...d }; } catch {} return freshData(); }
+// Data migrations: run in order for any stored version below DATA_VERSION. Never touch tasks/delivery.
+const DATA_MIGRATIONS = {
+  2: d => { // v2: London + Intern teams; Runrun -> London; add Kathy, Emily Y
+    for (const p of d.people) if (TEAM_DEFAULTS[p.name]) p.team = TEAM_DEFAULTS[p.name];
+    for (const n of ['Kathy', 'Emily Y']) if (!d.people.some(p => p.name === n))
+      d.people.push({ name: n, team: TEAM_DEFAULTS[n], color: PALETTE[d.people.length % PALETTE.length] });
+  },
+};
+function migrateData(d) {
+  let v = d.version || 1, changed = false;
+  while (v < DATA_VERSION) { v++; if (DATA_MIGRATIONS[v]) DATA_MIGRATIONS[v](d); changed = true; }
+  d.version = DATA_VERSION; return changed;
+}
+let DATA_MIGRATED = false;
+function loadData() {
+  try { const d = JSON.parse(localStorage.getItem(LS_DATA)); if (d && d.people) { const out = { stamps:{}, weekNotes:{}, delivery:{}, ...d }; DATA_MIGRATED = migrateData(out); return out; } } catch {}
+  return freshData();
+}
 let DATA = loadData();
-let SET = (() => { let s = {}; try { s = JSON.parse(localStorage.getItem(LS_SET)) || {}; } catch {}
-  return { ...SETTINGS_DEFAULTS, ...s, deadlines: { China: { ...DEADLINE_DEFAULTS.China, ...(s.deadlines?.China||{}) }, US: { ...DEADLINE_DEFAULTS.US, ...(s.deadlines?.US||{}) } } }; })();
+function loadSettings() {
+  let s = {}; try { s = JSON.parse(localStorage.getItem(LS_SET)) || {}; } catch {}
+  const out = { ...SETTINGS_DEFAULTS, ...s };
+  if (!Array.isArray(out.teams) || (s.version || 1) < 2) {
+    // v1 stored {deadlines:{China,US}} — keep any custom China/US times, add the new default teams.
+    out.teams = TEAMS_DEFAULT.map(t => ({ ...t, ...((s.deadlines || {})[t.id] || {}) }));
+    delete out.deadlines;
+  }
+  out.version = SETTINGS_VERSION; return out;
+}
+let SET = loadSettings();
+const team = id => SET.teams.find(t => t.id === id) || SET.teams[0];
+const teamOf = p => team(p.team);
+const badge = (p, long) => { const t = teamOf(p); return `<span class="badge" style="color:${t ? t.color : 'inherit'}">${esc(t ? t.name : p.team)}${long ? ' team' : ''}</span>`; };
 let saveTimer;
 function saveData() { localStorage.setItem(LS_DATA, JSON.stringify(DATA)); $('#saveState').textContent = '✓ Saved ' + new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
 function saveDataSoon() { $('#saveState').textContent = 'Saving…'; clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveData(); tick(true); }, 400); }
 const saveSet = () => localStorage.setItem(LS_SET, JSON.stringify(SET));
+saveSet(); if (DATA_MIGRATED) localStorage.setItem(LS_DATA, JSON.stringify(DATA));
 const getTask = (date, name) => (DATA.tasks[date] || {})[name] || '';
 function setTask(date, name, val) {
   val = val.replace(/\s+$/,'');
@@ -269,11 +307,11 @@ const person = n => DATA.people.find(p => p.name === n);
 const tint = c => c + '1a';
 
 /* ---------- deadline logic ---------- */
-function teamStatus(team) {
-  const dl = SET.deadlines[team], tz = validTz(dl.tz) ? dl.tz : DEADLINE_DEFAULTS[team].tz;
-  const date = todayIn(tz), members = DATA.people.filter(p => p.team === team);
+function teamStatus(t) {
+  const tz = validTz(t.tz) ? t.tz : 'UTC';
+  const date = todayIn(tz), members = DATA.people.filter(p => teamOf(p) === t);
   const weekend = [0,6].includes(dow(date));
-  const deadline = zonedToUtc(date, dl.time || '00:00', tz);
+  const deadline = zonedToUtc(date, t.time || '00:00', tz);
   const missing = members.filter(p => !getTask(date, p.name).trim());
   const diff = deadline - now();
   let state = 'ok';
@@ -281,10 +319,10 @@ function teamStatus(team) {
   else if (missing.length && diff <= 0) state = 'late';
   else if (missing.length && diff <= SET.headsUpMin*60000) state = 'warn';
   else if (missing.length) state = 'pending';
-  return { team, tz, date, deadline, members, missing, diff, weekend, state };
+  return { team: t, tz, date, deadline, members, missing, diff, weekend, state };
 }
 function renderBanner() {
-  $('#banner').innerHTML = TEAMS.map(t => {
+  $('#banner').innerHTML = SET.teams.map(t => {
     const s = teamStatus(t);
     const cls = s.state === 'pending' ? 'idle' : s.state;
     let head, body = '';
@@ -295,9 +333,9 @@ function renderBanner() {
       body = `<div class="meta">Missing (${s.missing.length}/${s.members.length}) 未填:</div><div class="chips">` +
         s.missing.map(p => `<span class="chip" data-go="${s.date}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</span>`).join('') + '</div>';
     const myTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return `<div class="team ${cls}">
-      <h3><span>${t === 'China' ? '🇨🇳 China team' : '🇺🇸 US team'} <span class="zh">${t==='China'?'中国组':'美国组'}</span></span><span class="cd">${head}</span></h3>
-      <div class="meta">For ${prettyDate(s.date)} · due ${esc(SET.deadlines[t].time)} ${esc(s.tz)}${myTz !== s.tz ? ` (= ${fmtTime(s.deadline, myTz)} your time)` : ''}</div>${body}</div>`;
+    return `<div class="team ${cls}" data-team="${esc(t.id)}" style="border-top:3px solid ${esc(t.color || '#ccc')}">
+      <h3><span>${esc(t.icon || '')} ${esc(t.name)} team <span class="zh">${esc(t.label || '')}</span></span><span class="cd">${head}</span></h3>
+      <div class="meta">For ${prettyDate(s.date)} · due ${esc(t.time)} ${esc(s.tz)}${myTz !== s.tz ? ` (= ${fmtTime(s.deadline, myTz)} your time)` : ''}</div>${body}</div>`;
   }).join('');
 }
 $('#banner').addEventListener('click', e => { const c = e.target.closest('[data-go]'); if (c) { curDate = c.dataset.go; show('daily'); renderDaily(); } });
@@ -316,12 +354,12 @@ function alertUser(kind, title, msg) {
 }
 $('#toastX').onclick = () => { $('#toast').style.display = 'none'; document.title = 'Storyverse · Team Schedule 团队排班'; };
 function checkDeadlines() {
-  for (const t of TEAMS) {
+  for (const t of SET.teams) {
     const s = teamStatus(t);
     if (s.state === 'idle' || !s.missing.length) continue;
     const names = s.missing.map(p => p.name).join(', ');
-    const label = t === 'China' ? 'China team' : 'US team';
-    const kLate = `${t}|${s.date}|late`, kWarn = `${t}|${s.date}|warn`;
+    const label = `${t.name} team`;
+    const kLate = `${t.id}|${s.date}|late`, kWarn = `${t.id}|${s.date}|warn`;
     if (s.diff <= 0 && !fired[kLate]) {
       fired[kLate] = Date.now();
       alertUser('late', `${label}: deadline passed — ${s.missing.length} missing`, `No task entered for ${s.date} by ${names}.`);
@@ -348,7 +386,7 @@ function renderDaily() {
   $('#dPeople').innerHTML = DATA.people.map(p => {
     const v = getTask(curDate, p.name), o = isOff(v);
     return `<div class="person ${!v && !we ? 'missing' : ''} ${o ? 'isoff' : ''}" style="--c:${p.color}" data-n="${esc(p.name)}">
-      <div class="nm">${esc(p.name)}<span class="badge ${p.team}">${p.team === 'US' ? 'US team' : 'China team'}</span></div>
+      <div class="nm">${esc(p.name)}${badge(p, true)}</div>
       <textarea rows="1" placeholder="Task for ${esc(p.name)}…">${esc(v)}</textarea>
       <button class="btn sm offbtn ${o ? 'on' : ''}" title="Toggle day off 休息">OFF</button></div>`;
   }).join('');
@@ -388,7 +426,7 @@ function renderWeek() {
   $('#wLabel').textContent = `${MON[d0.getMonth()]} ${d0.getDate()} – ${MON[d6.getMonth()]} ${d6.getDate()}, ${d6.getFullYear()}`;
   let h = `<thead><tr><th>${MON[parseYmd(days[3]).getMonth()]}</th>` + days.map(d => { const w = dow(d); return `<th class="${d === today ? 'today' : ''} ${w%6===0 ? 'we' : ''}">${DOW[w]} ${parseYmd(d).getDate()}</th>`; }).join('') + (hasNotes ? '<th>Notes 备注</th>' : '') + '</tr></thead><tbody>';
   for (const p of DATA.people) {
-    h += `<tr><td class="nm" style="--c:${p.color}">${esc(p.name)}<div class="badge ${p.team}">${p.team}</div></td>` + days.map(d => {
+    h += `<tr><td class="nm" style="--c:${p.color}">${esc(p.name)}<div>${badge(p)}</div></td>` + days.map(d => {
       const v = getTask(d, p.name), w = dow(d), miss = !v && w%6 !== 0 && d <= today;
       return `<td class="cell ${w%6===0 ? 'we' : ''} ${isOff(v) ? 'off' : ''} ${miss ? 'miss' : ''}" style="--t:${v && !isOff(v) ? tint(p.color) : 'transparent'}"><textarea rows="1" data-d="${d}" data-n="${esc(p.name)}">${esc(v)}</textarea></td>`;
     }).join('') + (hasNotes ? `<td class="note">${esc(notes[p.name] || '')}</td>` : '') + '</tr>';
@@ -411,26 +449,52 @@ $('#wThis').onclick = () => { curWeek = weekStart(ymd(now())); renderWeek(); };
 /* ---------- settings ---------- */
 const TZ_LIST = ['Asia/Shanghai','Asia/Hong_Kong','Asia/Taipei','Asia/Tokyo','Asia/Singapore','America/Los_Angeles','America/Denver','America/Chicago','America/New_York','Europe/London','Europe/Paris','UTC'];
 function renderSettings() {
-  $('#sDeadlines').innerHTML = TEAMS.map(t => `<div class="row" style="margin-bottom:10px">
-     <b style="width:70px">${t}</b>
-     <input type="time" data-t="${t}" data-k="time" value="${esc(SET.deadlines[t].time)}">
-     <input type="text" list="tzl" data-t="${t}" data-k="tz" value="${esc(SET.deadlines[t].tz)}" style="flex:1;min-width:160px"></div>`).join('') +
+  $('#sDeadlines').innerHTML = SET.teams.map((t, i) => `<div class="row" style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--line)" data-ti="${i}">
+     <input type="text" data-k="icon" value="${esc(t.icon || '')}" style="width:44px" title="Icon/emoji">
+     <input type="text" data-k="name" value="${esc(t.name)}" style="width:90px" title="Team name">
+     <input type="text" data-k="label" value="${esc(t.label || '')}" style="width:72px" title="Chinese label" placeholder="中文">
+     <input type="color" data-k="color" value="${esc(t.color || '#888888')}" title="Badge color" style="width:30px;height:30px;border:0;padding:0;background:none">
+     <input type="time" data-k="time" value="${esc(t.time)}" title="Deadline (local time in the team's time zone)">
+     <input type="text" list="tzl" data-k="tz" value="${esc(t.tz)}" style="flex:1;min-width:150px" title="IANA time zone">
+     <button class="btn sm danger" data-deltm title="Remove team">✕</button></div>`).join('') +
     `<datalist id="tzl">${TZ_LIST.map(z => `<option value="${z}">`).join('')}</datalist>`;
+  const teamOpts = sel => SET.teams.map(t => `<option value="${esc(t.id)}" ${t.id === sel ? 'selected' : ''}>${esc(t.name)}</option>`).join('');
+  $('#sNewTeam').innerHTML = teamOpts(SET.teams[0] && SET.teams[0].id);
   $('#sSkipWe').checked = SET.skipWeekends; $('#sHeads').value = SET.headsUpMin; $('#sSound').checked = SET.sound;
   $('#sPeople').innerHTML = DATA.people.map((p, i) => `<div class="pi" data-i="${i}">
      <input type="color" value="${p.color}" data-k="color" title="Color">
      <input type="text" value="${esc(p.name)}" data-k="name" title="Rename">
-     <select data-k="team">${TEAMS.map(t => `<option ${t === p.team ? 'selected' : ''}>${t}</option>`).join('')}</select>
-     <span><button class="btn sm" data-mv="-1" title="Move up">↑</button> <button class="btn sm danger" data-del title="Remove">✕</button></span></div>`).join('');
+     <select data-k="team">${teamOpts(teamOf(p) && teamOf(p).id)}</select>
+     <span style="white-space:nowrap"><button class="btn sm" data-mv="-1" title="Move up">↑</button> <button class="btn sm danger" data-del title="Remove">✕</button></span></div>`).join('');
   const n = 'Notification' in window ? Notification.permission : 'unsupported';
   $('#sNotifState').textContent = 'Browser notifications: ' + n + (n === 'denied' ? ' — allow them in your browser site settings.' : '');
   $('#seedInfo').textContent = SEED ? `Original data: ${Object.keys(SEED.tasks).length} days parsed from the Google Sheet (${SEED.parsedAt}).` : '';
 }
 $('#sDeadlines').addEventListener('change', e => {
-  const { t, k } = e.target.dataset; if (!t) return;
-  if (k === 'tz' && !validTz(e.target.value)) { alert('Unknown time zone: ' + e.target.value + '\nUse an IANA name like Asia/Shanghai or America/Los_Angeles.'); e.target.value = SET.deadlines[t].tz; return; }
-  SET.deadlines[t][k] = e.target.value; saveSet(); tick(true);
+  const row = e.target.closest('[data-ti]'); if (!row) return; const t = SET.teams[+row.dataset.ti], k = e.target.dataset.k;
+  if (k === 'tz' && !validTz(e.target.value)) { alert('Unknown time zone: ' + e.target.value + '\nUse an IANA name like Asia/Shanghai or America/Los_Angeles.'); e.target.value = t.tz; return; }
+  if (k === 'name' && !e.target.value.trim()) { e.target.value = t.name; return; }
+  t[k] = e.target.value.trim ? e.target.value.trim() : e.target.value; saveSet(); renderSettings(); renderDaily(); tick(true);
 });
+$('#sDeadlines').addEventListener('click', e => {
+  if (e.target.dataset.deltm === undefined) return; const i = +e.target.closest('[data-ti]').dataset.ti, t = SET.teams[i];
+  if (SET.teams.length <= 1) return alert('Keep at least one team.');
+  const n = DATA.people.filter(p => teamOf(p) === t).length, to = SET.teams[i === 0 ? 1 : 0];
+  if (!confirm(`Remove team "${t.name}"?` + (n ? ` Its ${n} member(s) will move to "${to.name}".` : ''))) return;
+  DATA.people.forEach(p => { if (teamOf(p) === t) p.team = to.id; }); SET.teams.splice(i, 1);
+  saveSet(); saveData(); renderAll();
+});
+$('#sAddTeam').onclick = () => {
+  const name = (prompt('New team name:') || '').trim(); if (!name) return;
+  let id = name, k = 2; while (SET.teams.some(t => t.id === id)) id = name + k++;
+  SET.teams.push({ id, name, label: '', icon: '', color: PALETTE[SET.teams.length % PALETTE.length], time: '10:00', tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' });
+  saveSet(); renderSettings(); tick(true);
+};
+$('#sResetTeams').onclick = () => {
+  if (!confirm('Restore the default teams/deadlines and default team assignments? Tasks are not affected.')) return;
+  SET.teams = TEAMS_DEFAULT.map(t => ({ ...t })); DATA.people.forEach(p => { if (TEAM_DEFAULTS[p.name]) p.team = TEAM_DEFAULTS[p.name]; });
+  saveSet(); saveData(); renderAll();
+};
 $('#sSkipWe').onchange = e => { SET.skipWeekends = e.target.checked; saveSet(); tick(true); };
 $('#sHeads').onchange = e => { SET.headsUpMin = Math.max(0, +e.target.value || 0); saveSet(); tick(true); };
 $('#sSound').onchange = e => { SET.sound = e.target.checked; saveSet(); };
@@ -443,7 +507,7 @@ $('#sPeople').addEventListener('change', e => {
     for (const d in DATA.tasks) if (p.name in DATA.tasks[d]) { DATA.tasks[d][nn] = DATA.tasks[d][p.name]; delete DATA.tasks[d][p.name]; }
     p.name = nn;
   } else p[k] = e.target.value;
-  saveData(); tick(true);
+  saveData(); renderDaily(); tick(true);
 });
 $('#sPeople').addEventListener('click', e => {
   const row = e.target.closest('.pi'); if (!row) return; const i = +row.dataset.i;
@@ -462,7 +526,8 @@ $('#iJson').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   try { const j = JSON.parse(await f.text()); const d = j.data || j; if (!d.people || !d.tasks) throw new Error('Not a team-schedule backup');
     if (!confirm('Replace current data with this backup?')) return;
-    DATA = { stamps: {}, weekNotes: {}, delivery: {}, ...d }; if (j.settings) { SET = { ...SET, ...j.settings }; saveSet(); }
+    DATA = { stamps: {}, weekNotes: {}, delivery: {}, ...d }; migrateData(DATA);
+    if (j.settings) { const keep = SET.teams; SET = { ...SET, ...j.settings }; if (!Array.isArray(SET.teams) || (j.settings.version || 1) < 2) SET.teams = keep; delete SET.deadlines; SET.version = SETTINGS_VERSION; saveSet(); }
     saveData(); renderAll(); alert('Backup imported.'); } catch (err) { alert('Import failed: ' + err.message); }
   e.target.value = '';
 };
