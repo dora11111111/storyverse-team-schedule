@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Storyverse · Team Schedule 团队排班</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#1d2433;--mute:#6b7385;--line:#e4e7ef;--acc:#4f46e5;--accs:#eef0ff;--red:#dc2626;--reds:#fef2f2;--amb:#d97706;--ambs:#fffbeb;--grn:#059669;--grns:#ecfdf5;--r:12px}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink)}
+header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar{max-width:1200px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:16px}.brand small{font-weight:400;color:var(--mute);margin-left:6px}
+nav{display:flex;gap:4px;margin-left:auto;background:#eef0f5;border-radius:10px;padding:3px}
+nav button{border:0;background:transparent;padding:6px 12px;border-radius:8px;cursor:pointer;font:inherit;color:var(--mute)}
+nav button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);font-weight:600}
+main{max-width:1200px;margin:0 auto;padding:16px}
+.zh{color:var(--mute);font-size:.85em;margin-left:4px;font-weight:400}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.btn{border:1px solid var(--line);background:#fff;padding:7px 12px;border-radius:8px;cursor:pointer;font:inherit;color:var(--ink);white-space:nowrap}
+.btn:hover{border-color:#c7cbe0}.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}.btn.sm{padding:4px 9px;font-size:12px}
+.btn.danger{color:var(--red)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input[type=date],input[type=time],input[type=number],input[type=text],select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+textarea{font:inherit;width:100%;resize:none;border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-height:36px;background:#fff;color:var(--ink);overflow:hidden}
+textarea:focus,input:focus,select:focus{outline:2px solid var(--accs);border-color:var(--acc)}
+/* banner */
+#banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:16px}
+.team{border-radius:var(--r);padding:14px 16px;border:1px solid var(--line);background:#fff}
+.team.ok{background:var(--grns);border-color:#a7f3d0}.team.warn{background:var(--ambs);border-color:#fcd34d}.team.late{background:var(--reds);border-color:#fca5a5}.team.idle{background:#fff}
+.team h3{margin:0 0 4px;font-size:15px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.team .cd{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px}
+.team.late .cd{color:var(--red)}.team.warn .cd{color:var(--amb)}.team.ok .cd{color:var(--grn)}
+.team .meta{color:var(--mute);font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:13px;cursor:pointer}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+#toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:50;max-width:min(560px,92vw);display:none}
+#toast .in{background:var(--red);color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);display:flex;gap:12px;align-items:flex-start}
+#toast.warn .in{background:var(--amb)}
+#toast button{background:rgba(255,255,255,.2);border:0;color:#fff;border-radius:6px;padding:4px 8px;cursor:pointer}
+/* daily */
+.people{display:grid;gap:8px}
+.person{display:grid;grid-template-columns:170px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid var(--line);border-left:5px solid var(--c);background:#fff}
+.person.missing{background:#fff7f7}
+.person .nm{font-weight:600;display:flex;flex-direction:column}
+.badge{font-size:11px;font-weight:500;color:var(--mute)}
+.badge.US{color:#2563eb}.badge.China{color:#c2410c}
+.offbtn{min-width:56px}.offbtn.on{background:#334155;color:#fff;border-color:#334155}
+.person.isoff textarea{background:#f1f5f9;color:var(--mute)}
+.status{font-size:12px;color:var(--mute)}
+.sumline{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mute);margin:8px 0 12px}
+/* week */
+.gridwrap{overflow:auto;border:1px solid var(--line);border-radius:var(--r);background:#fff}
+table.wk{border-collapse:separate;border-spacing:0;min-width:900px;width:100%}
+.wk th,.wk td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:4px;vertical-align:top}
+.wk th{background:#f8f9fc;font-weight:600;font-size:13px;position:sticky;top:0;z-index:2;text-align:left;padding:8px}
+.wk th.today{background:var(--accs);color:var(--acc)}
+.wk th.we,.wk td.we{background:#fafafa}
+.wk td.nm{position:sticky;left:0;z-index:1;background:#fff;font-weight:600;white-space:nowrap;min-width:110px;border-left:5px solid var(--c)}
+.wk th:first-child{position:sticky;left:0;z-index:3}
+.wk td textarea{border:1px solid transparent;background:transparent;min-height:34px;padding:5px 6px;font-size:13px}
+.wk td textarea:hover{border-color:var(--line)}
+.wk td textarea:focus{background:#fff}
+.wk td.cell{background:var(--t)}
+.wk td.off textarea{color:#64748b;font-weight:600}
+.wk td.miss{box-shadow:inset 0 0 0 2px #fecaca}
+.wk tr.deliv td{background:#fff8e6}.wk tr.deliv td.nm{border-left-color:#f59e0b}
+.wk td.note{font-size:12px;color:var(--mute);min-width:160px;white-space:pre-wrap}
+/* settings */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mute);margin-bottom:10px}
+.plist .pi{display:grid;grid-template-columns:28px 1fr 110px auto;gap:8px;align-items:center;margin-bottom:6px}
+.plist input[type=color]{width:28px;height:28px;border:0;padding:0;background:none;cursor:pointer}
+h2{font-size:16px;margin:0 0 12px}
+.hint{font-size:12px;color:var(--mute)}
+.hidden{display:none!important}
+code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
+@media (max-width:640px){
+ .person{grid-template-columns:1fr auto}.person .nm{flex-direction:row;gap:8px;align-items:baseline}.person textarea{grid-column:1/-1;grid-row:2}
+ nav{margin-left:0;width:100%}nav button{flex:1}
+ .team .cd{font-size:17px}
+}
+</style>
+</head>
+<body>
+<header><div class="bar">
+ <div class="brand">Storyverse Team Schedule<small>团队排班</small></div>
+ <nav id="tabs">
+  <button data-v="daily" class="on">Daily <span class="zh">每日</span></button>
+  <button data-v="week">Week <span class="zh">周视图</span></button>
+  <button data-v="settings">Settings <span class="zh">设置</span></button>
+ </nav>
+</div></header>
+<div id="toast"><div class="in"><div id="toastMsg" style="flex:1"></div><button id="toastX">Dismiss</button></div></div>
+<main>
+ <div id="banner"></div>
+
+ <section id="v-daily">
+  <div class="card">
+   <div class="row" style="justify-content:space-between">
+    <div class="row">
+     <button class="btn" id="dPrev" title="Previous day">◀</button>
+     <input type="date" id="dDate">
+     <button class="btn" id="dNext" title="Next day">▶</button>
+     <button class="btn" id="dToday">Today <span class="zh">今天</span></button>
+     <strong id="dLabel"></strong>
+    </div>
+    <div class="row">
+     <button class="btn" id="dCopy" title="Fill empty boxes with the previous workday's tasks">Copy prev. day <span class="zh">复制前一天</span></button>
+     <span class="status" id="saveState"></span>
+    </div>
+   </div>
+   <div class="sumline" id="dSum"></div>
+   <div class="people" id="dPeople"></div>
+   <div style="margin-top:14px">
+    <div style="font-weight:600;margin-bottom:6px">Delivery <span class="zh">交付</span></div>
+    <textarea id="dDeliv" placeholder="Deliverables for this day…"></textarea>
+   </div>
+  </div>
+ </section>
+
+ <section id="v-week" class="hidden">
+  <div class="card">
+   <div class="row" style="justify-content:space-between;margin-bottom:12px">
+    <div class="row">
+     <button class="btn" id="wPrev">◀</button>
+     <strong id="wLabel"></strong>
+     <button class="btn" id="wNext">▶</button>
+     <button class="btn" id="wThis">This week <span class="zh">本周</span></button>
+    </div>
+    <span class="hint">Click any cell to edit · type <code>OFF</code> for day off · red outline = missing workday</span>
+   </div>
+   <div class="gridwrap"><table class="wk" id="wTable"></table></div>
+  </div>
+ </section>
+
+ <section id="v-settings" class="hidden">
+  <div class="sgrid">
+   <div class="card">
+    <h2>Deadlines <span class="zh">截止时间</span></h2>
+    <div id="sDeadlines"></div>
+    <label class="f"><span><input type="checkbox" id="sSkipWe"> Skip weekends (Sat/Sun) <span class="zh">周末不提醒</span></span></label>
+    <label class="f">Heads-up before deadline (minutes) <span class="zh">提前提醒(分钟)</span><input type="number" id="sHeads" min="0" max="600"></label>
+    <label class="f"><span><input type="checkbox" id="sSound"> Play alert sound <span class="zh">提醒声音</span></span></label>
+    <div class="row">
+     <button class="btn pri" id="sNotif">Enable browser notifications</button>
+     <button class="btn" id="sTest">Test alert</button>
+    </div>
+    <p class="hint" id="sNotifState"></p>
+    <p class="hint">Checks run every 30 s while this page is open. Keep a tab open (or pinned) to get alerts.</p>
+   </div>
+   <div class="card">
+    <h2>Team members <span class="zh">成员 · 团队</span></h2>
+    <div class="plist" id="sPeople"></div>
+    <div class="row" style="margin-top:8px">
+     <input type="text" id="sNewName" placeholder="New member name">
+     <select id="sNewTeam"><option>China</option><option>US</option></select>
+     <button class="btn" id="sAdd">Add <span class="zh">添加</span></button>
+    </div>
+   </div>
+   <div class="card">
+    <h2>Backup &amp; export <span class="zh">备份 / 导出</span></h2>
+    <div class="row">
+     <button class="btn" id="eJson">Export JSON</button>
+     <label class="btn">Import JSON<input type="file" id="iJson" accept=".json,application/json" hidden></label>
+     <button class="btn" id="eCsv">Export CSV (sheet layout)</button>
+    </div>
+    <p class="hint">Data is stored in this browser only (localStorage). Export a JSON backup regularly; import it on another device to move your data.</p>
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <button class="btn danger" id="sReset">Reset all data to original sheet import</button>
+    <p class="hint" id="seedInfo"></p>
+   </div>
+  </div>
+ </section>
+</main>
+
+<script>
+/* ======================= CONFIG — edit here ======================= */
+// Default team for each person ('China' or 'US'). Changes made in Settings
+// are saved in the browser and take priority over these defaults.
+const TEAM_DEFAULTS = {
+  'Xueyuan': 'China', 'Runrun': 'China', 'Weiwei': 'China', 'Steven': 'China',
+  'Emily G': 'China', 'Sally': 'China', 'Muyi': 'China',
+  'Nicola': 'US', 'Lucia': 'US', 'Christy': 'US', 'Emily W': 'US',
+};
+const DEFAULT_TEAM = 'China'; // for anyone not listed above
+// Deadline: a person's task for a workday must be entered before this local time
+// on that same day, in that team's time zone. Editable in Settings.
+const DEADLINE_DEFAULTS = {
+  China: { time: '18:00', tz: 'Asia/Shanghai' },
+  US:    { time: '10:00', tz: 'America/Los_Angeles' },
+};
+const SETTINGS_DEFAULTS = { skipWeekends: true, headsUpMin: 30, sound: true };
+const PALETTE = ['#6366f1','#ec4899','#14b8a6','#f97316','#8b5cf6','#0ea5e9','#22c55e','#eab308','#ef4444','#06b6d4','#a855f7','#84cc16','#f43f5e','#3b82f6'];
+/* ================================================================== */
+
+const SEED = {"source":"Google Sheet 1h1vb6SfBvgyA0Ye8kFTKp7JjxrlGsDoG gid 423849879","parsedAt":"2026-10-10T00:40:57","people":["Xueyuan","Runrun","Weiwei","Steven","Nicola","Emily G","Lucia","Christy","Emily W","Sally","Muyi"],"tasks":{"2026-08-03":{"Xueyuan":"Cat Ep2","Runrun":"社媒 Social","Weiwei":"Garden E1","Steven":"Janitor E1","Nicola":"Ice Queen E2/3","Emily G":"Janitor E2/3","Lucia":"Trailer/Mymovie","Christy":"Cardboard/Kemi","Emily W":"On Bard/ Rexing"},"2026-08-04":{"Xueyuan":"Cat Ep2","Runrun":"Cat Anime E1","Weiwei":"Garden E1","Steven":"Janitor E1","Nicola":"GBTM 大纲","Emily G":"GBTM 1-6 rewrite","Lucia":"Mymovie","Christy":"Kemi","Emily W":"Rexing"},"2026-08-05":{"Xueyuan":"Cat Ep3","Runrun":"Cat Anime E1","Weiwei":"Garden E2","Steven":"Janitor E2","Nicola":"Ice Queen E1 V2","Emily G":"GBTM 大纲","Lucia":"Trailer","Christy":"Kemi","Emily W":"Rexing"},"2026-08-06":{"Xueyuan":"Cat Ep3","Runrun":"Ice Queen E1","Weiwei":"Garden E2","Steven":"Janitor E2","Nicola":"Ice Queen E2/3 V2","Emily G":"GBTM 6-7","Lucia":"Trailer","Christy":"Kemi","Emily W":"GBTM 1-6 re-edit"},"2026-08-07":{"Xueyuan":"Ice Queen E3","Runrun":"OFF","Weiwei":"Garden E2","Steven":"Janitor E3","Nicola":"GBTM 10-11","Emily G":"GBTM 8-9","Lucia":"Trailer/Rexing","Christy":"Kemi","Emily W":"GBTM 1-6 re-edit"},"2026-08-10":{"Runrun":"OFF","Xueyuan":"Ice Queen E1","Weiwei":"Garden E3","Steven":"Janitor E3","Nicola":"GBTM 14-15","Emily G":"GBTM 12-13","Lucia":"Trailer","Christy":"Kemi","Emily W":"GBTM 1-6 re-edit"},"2026-08-11":{"Runrun":"OFF","Xueyuan":"Ice Queen E2","Weiwei":"Garden E3","Steven":"GBTM Prep","Nicola":"GBTM 18-19","Emily G":"GBTM 16-17","Lucia":"Kemi","Christy":"Kemi","Emily W":"GBTM 1-6 re-edit"},"2026-08-12":{"Runrun":"OFF","Xueyuan":"GBTM Prep","Weiwei":"GBTM Prep","Steven":"GBTM Prep","Nicola":"GBTM 23","Emily G":"GBTM 21-22","Lucia":"Kemi","Christy":"Kemi","Emily W":"GBTM 1-6 re-edit"},"2026-08-13":{"Runrun":"OFF","Xueyuan":"Ice Queen E2","Weiwei":"GBTM 10","Steven":"GBTM 06","Nicola":"GBTM 26-28","Emily G":"GBTM 24-25","Lucia":"Kemi/ GBTM Prep","Christy":"Kemi","Emily W":"GBTM 1-6 re-edit"},"2026-08-14":{"Runrun":"OFF","Xueyuan":"GBTM 08","Weiwei":"GBTM 11","Steven":"GBTM 07","Nicola":"GBTM","Emily G":"GBTM 29","Lucia":"GBTM Prep","Christy":"Kemi","Emily W":"GBTM 7-8"},"2026-08-17":{"Runrun":"Ice Quuen E3","Xueyuan":"GBTM 09","Weiwei":"GBTM V2","Steven":"GBTM V2","Nicola":"GBTM S2","Emily G":"GBTM 29-31","Lucia":"GBTM Prep","Christy":"Kemi","Emily W":"GBTM 7-8"},"2026-08-18":{"Runrun":"Office Series","Xueyuan":"GBTM 14","Weiwei":"GBTM 15","Steven":"GBTM 12","Nicola":"GBTM 35","Emily G":"GBTM 32-34","Lucia":"GBTM Prep","Christy":"Kemi","Emily W":"GBTM 9-10"},"2026-08-19":{"Runrun":"Garden E3","Xueyuan":"GBTM 14","Weiwei":"GBTM 19","Steven":"GBTM 12","Nicola":"ReBorn Mistress ep1","Emily G":"GBTM 35-36","Lucia":"Odyssey","Christy":"Odyssey","Emily W":"GBTM 11 -12","Sally":"GBTM"},"2026-08-20":{"Runrun":"Original E1","Xueyuan":"GBTM 16","Weiwei":"GBTM 20","Steven":"GBTM 13","Nicola":"ReBorn Mistress ep4/5","Emily G":"ReBorn Mistress ep2/3","Lucia":"Odyssey","Christy":"Odyssey","Emily W":"GBTM 13-14","Sally":"GBTM"},"2026-08-21":{"Runrun":"Original Revisions","Xueyuan":"GBTM 17","Weiwei":"GBTM 22","Steven":"GBTM 13","Nicola":"GBTM","Emily G":"GBTM 37-38","Lucia":"Odyssey","Christy":"Odyssey","Emily W":"GBTM 13-14","Sally":"GBTM"},"2026-08-24":{"Runrun":"Scial Media","Nicola":"GBTM 40-41","Emily G":"GBTM 39","Xueyuan":"GBTM 18","Weiwei":"GBTM 23","Steven":"GBTM 24","Emily W":"GBTM 17-18","Sally":"GBTM 15-16","Lucia":"Odyssey","Christy":"Odyssey"},"2026-08-25":{"Runrun":"Scial Media","Nicola":"GBTM 44","Emily G":"GBTM 42-43","Xueyuan":"GBTM 21","Weiwei":"GBTM V2","Steven":"GBTM V2","Emily W":"GBTM 19/23","Sally":"GBTM V2","Lucia":"Odyssey","Christy":"Odyssey"},"2026-08-26":{"Runrun":"Scial Media","Nicola":"Lost Depth\n大纲","Emily G":"Lost Depth\n大纲","Xueyuan":"GBTM 27","Weiwei":"GBTM 31","Steven":"GBTM V2","Emily W":"GBTM 1-20","Sally":"GBTM 21","Lucia":"Odyssey","Christy":"Odyssey"},"2026-08-27":{"Runrun":"Scial Media","Nicola":"White Island\n大纲","Emily G":"Lost Depth\n大纲","Xueyuan":"GBTM 28","Weiwei":"GBTM V2","Steven":"GBTM 25","Emily W":"GBTM 1-20","Sally":"GBTM 22/24","Lucia":"Odyssey","Christy":"Odyssey"},"2026-08-28":{"Runrun":"Reborn Ep1","Nicola":"White Island\n大纲","Emily G":"Lost Depth\n大纲","Xueyuan":"GBTM V2","Weiwei":"GBTM Asset","Steven":"GBTM V2","Emily W":"GBTM 1-20","Sally":"GBTM 25/27","Lucia":"Odyssey","Christy":"Odyssey"},"2026-08-31":{"Runrun":"Office Series","Nicola":"White Island\n大纲","Emily G":"Lost Depth\n大纲","Xueyuan":"GBTM 29","Weiwei":"GBTM 32","Steven":"GBTM 26","Emily W":"GBTM","Sally":"GBTM 28/31","Lucia":"Odyssey","Christy":"Odyssey"},"2026-09-01":{"Runrun":"Original E1","Nicola":"Lost Depth\n大纲","Emily G":"Lost Depth\n大纲","Xueyuan":"Odyssey","Weiwei":"Odyssey","Steven":"Odyssey","Emily W":"Odyssey","Sally":"GBTM","Lucia":"Odyssey","Christy":"Odyssey"},"2026-09-02":{"Runrun":"Original E2","Nicola":"Lost Depth\nEp6-9","Emily G":"Lost Depth\nEp4-6","Xueyuan":"GBTM 30","Weiwei":"GBTM 33","Steven":"GBTM 35","Emily W":"GBTM","Sally":"GBTM","Lucia":"Cardboard","Christy":"Sai"},"2026-09-03":{"Runrun":"Original E3","Nicola":"Lost Depth\nEp12","Emily G":"Lost Depth\nEp10-11","Xueyuan":"GBTM 40","Weiwei":"GBTM 34","Steven":"GBTM 36","Emily W":"GBTM 10-20 V2","Sally":"GBTM","Lucia":"Cardboard","Christy":"Cardboard"},"2026-09-04":{"Runrun":"Original Revisions","Nicola":"White Island\nEp2","Emily G":"White Island\nEp1","Xueyuan":"GBTM 40","Weiwei":"GBTM 41","Steven":"GBTM 37","Emily W":"GBTM","Sally":"GBTM","Lucia":"Cardboard","Christy":"Cardboard"},"2026-09-07":{"Runrun":"Office Series","Nicola":"Holiday","Emily G":"White Island\nEp1-2","Xueyuan":"GBTM 42","Weiwei":"GBTM 41","Steven":"GBTM 37","Lucia":"Sai","Christy":"Sai","Emily W":"GBTM 25-26"},"2026-09-08":{"Runrun":"Original E1","Nicola":"White Island\nEp4","Emily G":"White Island\nEp3","Xueyuan":"GBTM 43","Weiwei":"GBTM 44","Steven":"GBTM 38","Lucia":"Sai","Christy":"Sai","Emily W":"GBTM 29-30"},"2026-09-09":{"Runrun":"Original E2","Nicola":"White Island\nEp4","Emily G":"White Island\nEp3","Xueyuan":"GBTM","Weiwei":"GBTM","Steven":"GBTM 39","Lucia":"Sai","Christy":"Sai","Emily W":"GBTM 27-28"},"2026-09-10":{"Runrun":"Original E3","Nicola":"White Island\nEp5","Emily G":"White Island\nEp5","Xueyuan":"GBTM","Weiwei":"GBTM","Steven":"GBTM","Lucia":"Sai","Christy":"Sai","Emily W":"GBTM 35-36"},"2026-09-11":{"Runrun":"Original Revisions","Nicola":"White Island\nEp7","Emily G":"White Island\nEp6","Xueyuan":"GBTM","Weiwei":"GBTM","Steven":"GBTM","Lucia":"Sai","Christy":"Sai","Emily W":"GBTM 31-32"},"2026-09-12":{"Lucia":"Sai","Christy":"Sai"},"2026-09-14":{"Runrun":"Office Series","Xueyuan":"GBTM","Weiwei":"GBTM","Steven":"GBTM","Nicola":"White Island\nEp8","Emily G":"White Island\nEp8","Lucia":"Sai","Christy":"Sai","Emily W":"GBTM 37-38"},"2026-09-15":{"Runrun":"Original E1","Xueyuan":"GBTM","Weiwei":"GBTM","Steven":"GBTM","Nicola":"White Island\nEp10","Emily G":"White Island\nEp9","Lucia":"Sai","Christy":"Sai","Emily W":"GBTM 39-40"},"2026-09-16":{"Runrun":"Original E2","Xueyuan":"GBTM","Weiwei":"GBTM","Steven":"GBTM","Nicola":"White Island\nEp12","Emily G":"White Island\nEp11","Lucia":"Sai","Christy":"Sai","Emily W":"GBTM 20-30 V2"},"2026-09-17":{"Runrun":"Original E3","Xueyuan":"GBTM","Weiwei":"GBTM","Steven":"GBTM","Nicola":"男男\n大纲","Emily G":"男男\n大纲","Lucia":"Sai","Christy":"Sonilo","Emily W":"GBTM 20-40 V2"},"2026-09-18":{"Runrun":"Original Revisions","Xueyuan":"GBTM","Weiwei":"GBTM","Steven":"GBTM","Nicola":"男男\nEp1","Emily G":"男男\nEp2","Lucia":"Sai","Christy":"Sonilo","Emily W":"GBTM 20-40 V2"},"2026-09-13":{"Lucia":"Sai","Christy":"Sai"},"2026-09-21":{"Runrun":"Office Series","Emily G":"男男\nEp4-5","Nicola":"男男\nEp4-5","Xueyuan":"White Island Ep1","Weiwei":"GBTM","Steven":"GBTM","Emily W":"GBTM","Sally":"AYY","Lucia":"Kemi"},"2026-09-22":{"Runrun":"Original E1","Emily G":"Sonilo","Nicola":"White Island\nEp13","Xueyuan":"White Island Ep1","Weiwei":"Dramabox Assets","Steven":"White Island Ep1","Emily W":"White Island","Sally":"AYY","Lucia":"Kemi"},"2026-09-23":{"Runrun":"Original E2","Emily G":"White Island\nEp15","Nicola":"White Island\nEp14","Xueyuan":"White Island Ep1","Weiwei":"Dramabox Assets","Steven":"Kemi","Emily W":"Kemi","Sally":"GBTM","Lucia":"Sonilo"},"2026-09-24":{"Runrun":"Original E3","Emily G":"White Island\nEp17","Nicola":"White Island\nEp16","Xueyuan":"男男","Weiwei":"Dramabox Assets","Steven":"Tiktok","Emily W":"GBTM","Sally":"GBTM","Lucia":"Kemi"},"2026-09-25":{"Runrun":"Original Revisions","Nicola":"GBTM","Emily W":"GBTM","Lucia":"Kemi"},"2026-09-20":{"Emily G":"男男\nEp3","Xueyuan":"GBTM","Weiwei":"GBTM","Steven":"GBTM","Sally":"AYY"},"2026-09-28":{"Runrun":"Office Series","Xueyuan":"男男","Weiwei":"Social Media","Steven":"White Island","Emily G":"White Island","Nicola":"White Island","Lucia":"Sonilo","Sally":"GBTM"},"2026-09-29":{"Runrun":"Original E1","Xueyuan":"男男","Weiwei":"Social Media","Steven":"White Island","Emily G":"White Island","Nicola":"White Island","Lucia":"Sonilo","Sally":"GBTM"},"2026-09-30":{"Runrun":"Sonilo","Xueyuan":"Sonilo","Weiwei":"Sonilo","Steven":"Sonilo","Emily G":"White Island","Nicola":"White Island","Lucia":"Sonilo","Emily W":"Sonilo","Sally":"Sonilo"},"2026-10-01":{"Runrun":"Sonilo","Nicola":"White Island","Lucia":"Sonilo","Emily W":"Sonilo"},"2026-10-02":{"Runrun":"Sonilo","Nicola":"White Island","Lucia":"Sonilo","Emily W":"Sonilo"},"2026-09-27":{"Xueyuan":"男男 Ep3","Weiwei":"Social Media"},"2026-10-05":{"Runrun":"Office Series","Nicola":"White Island\nEp29","Muyi":"White Island","Lucia":"Sonilo","Emily W":"Sonilo"},"2026-10-06":{"Runrun":"Original E1","Nicola":"12 Scrappy","Muyi":"White Island","Lucia":"Sonilo","Emily W":"Sonilo"},"2026-10-07":{"Runrun":"Original E2","Nicola":"12 Scrappy","Muyi":"Horror","Lucia":"Sonilo","Emily W":"GBTM Trailer"},"2026-10-08":{"Runrun":"Original E3","Xueyuan":"男男","Weiwei":"White Island","Steven":"White Island","Emily G":"White Island\nEp18","Nicola":"White Island","Muyi":"Christmas","Lucia":"Trailer","Emily W":"Trailer"},"2026-10-09":{"Runrun":"Original Revisions","Xueyuan":"男男","Weiwei":"Tiktok Surfing","Steven":"White Island","Emily G":"White Island\nEp19","Nicola":"White Island\nEp20","Muyi":"Horror 2","Emily W":"Sonilo Horror","Sally":"White Island Trailer"},"2026-10-10":{"Xueyuan":"男男","Weiwei":"男男","Steven":"White Island","Emily G":"White Island\nEp20","Sally":"White Island Trailer"},"2026-10-12":{"Runrun":"Office Series","Xueyuan":"男男","Nicola":"White Island\nEp21","Emily G":"White Island\nEp22","Muyi":"White Island\nEp23"},"2026-10-13":{"Runrun":"Original E1","Xueyuan":"男男","Nicola":"White Island\nEp24","Emily G":"White Island\nEp25","Muyi":"White Island\nEp26"},"2026-10-14":{"Runrun":"Original E2","Xueyuan":"男男","Nicola":"White Island\nEp27","Emily G":"White Island\nEp28","Muyi":"White Island\nEp29"},"2026-10-15":{"Runrun":"Original E3","Xueyuan":"男男","Nicola":"White Island\nEp30"},"2026-10-16":{"Runrun":"Original Revisions"},"2026-10-19":{"Runrun":"Office Series","Emily W":"GBTM 37-38"},"2026-10-20":{"Runrun":"Original E1","Emily W":"GBTM 39-40"},"2026-10-21":{"Runrun":"Original E2","Emily W":"GBTM 20-30 V2"},"2026-10-22":{"Runrun":"Original E3","Emily W":"GBTM 20-40 V2"},"2026-10-23":{"Runrun":"Original Revisions","Emily W":"GBTM 20-40 V2"},"2026-10-26":{"Runrun":"Office Series"},"2026-10-27":{"Runrun":"Original E1"},"2026-10-28":{"Runrun":"Original E2"},"2026-10-29":{"Runrun":"Original E3"},"2026-10-30":{"Runrun":"Original Revisions"},"2026-11-02":{"Runrun":"Office Series"},"2026-11-03":{"Runrun":"Original E1"},"2026-11-04":{"Runrun":"Original E2"},"2026-11-05":{"Runrun":"Original E3"},"2026-11-06":{"Runrun":"Original Revisions"}},"delivery":{"2026-08-03":"HL Sea E1","2026-08-04":"Sea E1","2026-08-05":"HL Sea E2","2026-08-06":"Sea E2","2026-08-07":"HL Sea E3","2026-08-08":"Sea E3","2026-08-10":"HL Cat E1","2026-08-11":"Cat E1","2026-08-12":"HL Cat E2","2026-08-13":"Cat E2","2026-08-14":"HL Cat E3","2026-08-15":"Cat E3","2026-08-18":"Delivery 1-10","2026-08-28":"Delivery 1-20","2026-09-09":"Delivery 1-30","2026-09-16":"Delivery 1-44","2026-09-18":"Delivery Whole series"},"weekNotes":{"2026-08-23":{"Runrun":"Ep 14, Ep16, Ep17, Ep18, Ep21, Ep23 都要拉丝","Xueyuan":"rap 6，8，9，10，17, 21"},"2026-10-04":{"Xueyuan":"White Island Ep7 | White Island Ep7 | White Island Ep8 | White Island Ep8 | OFF | OFF","Weiwei":"White Island Ep9 | White Island Ep9 | White Island Ep10 | White Island Ep10 | OFF | OFF","Steven":"White Island Ep11 | White Island Ep11 | White Island Ep12 | White Island Ep12 | OFF | OFF","Emily G":"White Island Ep1 | White Island Ep1 | White Island Ep2 | White Island Ep2 | White Island","Muyi":"White Island Ep3 | White Island Ep3 | White Island Ep4 | White Island Ep4 | White Island","Lucia":"White Island Ep5 | White Island Ep5 | White Island Ep6 | White Island Ep6 | White Island"},"2026-10-11":{"Xueyuan":"White Island","Weiwei":"White Island Ep16 | White Island Ep16 | White Island Ep21 | White Island Ep21 | White Island","Steven":"White Island Ep18 | White Island Ep18 | White Island Ep23 | White Island Ep23 | White Island"},"2026-10-18":{"Xueyuan":"White Island Ep20 | White Island Ep20 | White Island Ep25 | White Island Ep25 | White Island","Weiwei":"White Island Ep22 | White Island Ep22 | White Island Ep26 | White Island Ep26 | White Island","Steven":"White Island Ep24 | White Island Ep24 | White Island Ep27 | White Island Ep27 | White Island"},"2026-10-25":{"Xueyuan":"White Island Ep28 | White Island Ep28 | White Island | White Island | White Island","Weiwei":"White Island Ep29 | White Island Ep29 | White Island | White Island | White Island","Steven":"White Island Ep30 | White Island Ep30 | White Island | White Island | White Island"},"2026-11-01":{"Xueyuan":"White Island | White Island | White Island | White Island | White Island","Weiwei":"White Island | White Island | White Island | White Island | White Island","Steven":"White Island | White Island | White Island | White Island | White Island"}}};
+const LS_DATA = 'storyverse.schedule.data.v1', LS_SET = 'storyverse.schedule.settings.v1', LS_FIRED = 'storyverse.schedule.fired.v1';
+const TEAMS = ['China','US'];
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- time (supports ?now=ISO for testing) ---------- */
+let NOW_OFFSET = 0;
+(() => { const p = new URLSearchParams(location.search).get('now'); if (p) { const t = Date.parse(p); if (!isNaN(t)) NOW_OFFSET = t - Date.now(); } })();
+window.__setNow = iso => { NOW_OFFSET = Date.parse(iso) - Date.now(); tick(true); };
+const now = () => new Date(Date.now() + NOW_OFFSET);
+
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseYmd = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (s, n) => { const d = parseYmd(s); d.setDate(d.getDate()+n); return ymd(d); };
+const dow = s => parseYmd(s).getDay();
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], DOWZH = ['日','一','二','三','四','五','六'];
+const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+function tzParts(date, tz) {
+  const f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  const o = {}; for (const p of f.formatToParts(date)) o[p.type] = p.value;
+  return { y:+o.year, m:+o.month, d:+o.day, h:+o.hour % 24, mi:+o.minute, s:+o.second };
+}
+function zonedToUtc(dateStr, timeStr, tz) {
+  const [y,m,d] = dateStr.split('-').map(Number), [h,mi] = timeStr.split(':').map(Number);
+  let guess = Date.UTC(y, m-1, d, h, mi);
+  for (let i = 0; i < 3; i++) {
+    const p = tzParts(new Date(guess), tz);
+    const asUtc = Date.UTC(p.y, p.m-1, p.d, p.h, p.mi, p.s);
+    guess += Date.UTC(y, m-1, d, h, mi) - asUtc;
+  }
+  return new Date(guess);
+}
+const todayIn = tz => { const p = tzParts(now(), tz); return `${p.y}-${pad(p.m)}-${pad(p.d)}`; };
+function validTz(tz) { try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch { return false; } }
+function fmtDur(ms) {
+  const a = Math.abs(ms), s = Math.floor(a/1000), d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60), sec = s%60;
+  return (d ? d+'d ' : '') + (d||h ? h+'h ' : '') + pad(m)+'m ' + pad(sec)+'s';
+}
+const fmtTime = (date, tz) => new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }).format(date);
+const prettyDate = s => { const d = parseYmd(s); return `${DOW[d.getDay()]} ${MON[d.getMonth()].charAt(0)+MON[d.getMonth()].slice(1).toLowerCase()} ${d.getDate()}, ${d.getFullYear()} · 周${DOWZH[d.getDay()]}`; };
+
+/* ---------- state ---------- */
+function freshData() {
+  const s = SEED || { people: [], tasks: {}, delivery: {}, weekNotes: {} };
+  return {
+    people: s.people.map((n, i) => ({ name: n, team: TEAM_DEFAULTS[n] || DEFAULT_TEAM, color: PALETTE[i % PALETTE.length] })),
+    tasks: JSON.parse(JSON.stringify(s.tasks)), delivery: { ...s.delivery },
+    weekNotes: JSON.parse(JSON.stringify(s.weekNotes || {})), stamps: {}, version: 1,
+  };
+}
+function loadData() { try { const d = JSON.parse(localStorage.getItem(LS_DATA)); if (d && d.people) return { stamps:{}, weekNotes:{}, ...d }; } catch {} return freshData(); }
+let DATA = loadData();
+let SET = (() => { let s = {}; try { s = JSON.parse(localStorage.getItem(LS_SET)) || {}; } catch {}
+  return { ...SETTINGS_DEFAULTS, ...s, deadlines: { China: { ...DEADLINE_DEFAULTS.China, ...(s.deadlines?.China||{}) }, US: { ...DEADLINE_DEFAULTS.US, ...(s.deadlines?.US||{}) } } }; })();
+let saveTimer;
+function saveData() { localStorage.setItem(LS_DATA, JSON.stringify(DATA)); $('#saveState').textContent = '✓ Saved ' + new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
+function saveDataSoon() { $('#saveState').textContent = 'Saving…'; clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveData(); tick(true); }, 400); }
+const saveSet = () => localStorage.setItem(LS_SET, JSON.stringify(SET));
+const getTask = (date, name) => (DATA.tasks[date] || {})[name] || '';
+function setTask(date, name, val) {
+  val = val.replace(/\s+$/,'');
+  if (!DATA.tasks[date]) DATA.tasks[date] = {};
+  if (val) DATA.tasks[date][name] = val; else delete DATA.tasks[date][name];
+  DATA.stamps[date + '|' + name] = new Date().toISOString();
+  saveDataSoon();
+}
+const isOff = v => /^\s*(off|休|休息|请假)\s*$/i.test(v);
+const person = n => DATA.people.find(p => p.name === n);
+const tint = c => c + '1a';
+
+/* ---------- deadline logic ---------- */
+function teamStatus(team) {
+  const dl = SET.deadlines[team], tz = validTz(dl.tz) ? dl.tz : DEADLINE_DEFAULTS[team].tz;
+  const date = todayIn(tz), members = DATA.people.filter(p => p.team === team);
+  const weekend = [0,6].includes(dow(date));
+  const deadline = zonedToUtc(date, dl.time || '00:00', tz);
+  const missing = members.filter(p => !getTask(date, p.name).trim());
+  const diff = deadline - now();
+  let state = 'ok';
+  if (!members.length || (weekend && SET.skipWeekends)) state = 'idle';
+  else if (missing.length && diff <= 0) state = 'late';
+  else if (missing.length && diff <= SET.headsUpMin*60000) state = 'warn';
+  else if (missing.length) state = 'pending';
+  return { team, tz, date, deadline, members, missing, diff, weekend, state };
+}
+function renderBanner() {
+  $('#banner').innerHTML = TEAMS.map(t => {
+    const s = teamStatus(t);
+    const cls = s.state === 'pending' ? 'idle' : s.state;
+    let head, body = '';
+    if (s.state === 'idle') { head = s.members.length ? 'Weekend · no deadline' : 'No members'; }
+    else if (!s.missing.length) head = '✓ All entered';
+    else head = s.diff > 0 ? `⏳ ${fmtDur(s.diff)} left` : `⚠ Overdue ${fmtDur(s.diff)}`;
+    if (s.state !== 'idle' && s.missing.length)
+      body = `<div class="meta">Missing (${s.missing.length}/${s.members.length}) 未填:</div><div class="chips">` +
+        s.missing.map(p => `<span class="chip" data-go="${s.date}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</span>`).join('') + '</div>';
+    const myTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return `<div class="team ${cls}">
+      <h3><span>${t === 'China' ? '🇨🇳 China team' : '🇺🇸 US team'} <span class="zh">${t==='China'?'中国组':'美国组'}</span></span><span class="cd">${head}</span></h3>
+      <div class="meta">For ${prettyDate(s.date)} · due ${esc(SET.deadlines[t].time)} ${esc(s.tz)}${myTz !== s.tz ? ` (= ${fmtTime(s.deadline, myTz)} your time)` : ''}</div>${body}</div>`;
+  }).join('');
+}
+$('#banner').addEventListener('click', e => { const c = e.target.closest('[data-go]'); if (c) { curDate = c.dataset.go; show('daily'); renderDaily(); } });
+
+/* ---------- alerts ---------- */
+let fired = {}; try { fired = JSON.parse(localStorage.getItem(LS_FIRED)) || {}; } catch {}
+function beep() {
+  if (!SET.sound) return;
+  try { const ac = new (window.AudioContext || window.webkitAudioContext)(); [0, .25, .5].forEach(t => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 880; o.connect(g); g.connect(ac.destination); g.gain.setValueAtTime(.2, ac.currentTime+t); g.gain.exponentialRampToValueAtTime(.001, ac.currentTime+t+.2); o.start(ac.currentTime+t); o.stop(ac.currentTime+t+.21); }); } catch {}
+}
+function alertUser(kind, title, msg) {
+  $('#toast').className = kind === 'warn' ? 'warn' : ''; $('#toastMsg').innerHTML = `<strong>${esc(title)}</strong><br>${esc(msg)}`; $('#toast').style.display = 'block';
+  beep();
+  if ('Notification' in window && Notification.permission === 'granted') { try { new Notification(title, { body: msg, tag: title, requireInteraction: kind !== 'warn' }); } catch {} }
+  document.title = (kind === 'warn' ? '⏳ ' : '⚠ ') + 'Missing tasks · Team Schedule';
+}
+$('#toastX').onclick = () => { $('#toast').style.display = 'none'; document.title = 'Storyverse · Team Schedule 团队排班'; };
+function checkDeadlines() {
+  for (const t of TEAMS) {
+    const s = teamStatus(t);
+    if (s.state === 'idle' || !s.missing.length) continue;
+    const names = s.missing.map(p => p.name).join(', ');
+    const label = t === 'China' ? 'China team' : 'US team';
+    const kLate = `${t}|${s.date}|late`, kWarn = `${t}|${s.date}|warn`;
+    if (s.diff <= 0 && !fired[kLate]) {
+      fired[kLate] = Date.now();
+      alertUser('late', `${label}: deadline passed — ${s.missing.length} missing`, `No task entered for ${s.date} by ${names}.`);
+    } else if (s.diff > 0 && s.diff <= SET.headsUpMin*60000 && !fired[kWarn]) {
+      fired[kWarn] = Date.now();
+      alertUser('warn', `${label}: ${Math.ceil(s.diff/60000)} min to deadline`, `Still missing for ${s.date}: ${names}.`);
+    }
+  }
+  const cutoff = Date.now() - 30*86400000; for (const k in fired) if (fired[k] < cutoff) delete fired[k];
+  localStorage.setItem(LS_FIRED, JSON.stringify(fired));
+}
+let lastCheck = 0;
+function tick(force) { renderBanner(); if (force || Date.now() - lastCheck >= 30000) { lastCheck = Date.now(); checkDeadlines(); } }
+
+/* ---------- daily view ---------- */
+let curDate = ymd(now());
+function autoGrow(t) { t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
+function renderDaily() {
+  $('#dDate').value = curDate; $('#dLabel').textContent = prettyDate(curDate);
+  const we = [0,6].includes(dow(curDate));
+  const filled = DATA.people.filter(p => getTask(curDate, p.name).trim()).length;
+  const off = DATA.people.filter(p => isOff(getTask(curDate, p.name))).length;
+  $('#dSum').innerHTML = `<span>Filled <b>${filled}</b>/${DATA.people.length}</span><span>OFF <b>${off}</b></span>${we ? '<span>Weekend 周末</span>' : ''}`;
+  $('#dPeople').innerHTML = DATA.people.map(p => {
+    const v = getTask(curDate, p.name), o = isOff(v);
+    return `<div class="person ${!v && !we ? 'missing' : ''} ${o ? 'isoff' : ''}" style="--c:${p.color}" data-n="${esc(p.name)}">
+      <div class="nm">${esc(p.name)}<span class="badge ${p.team}">${p.team === 'US' ? 'US team' : 'China team'}</span></div>
+      <textarea rows="1" placeholder="Task for ${esc(p.name)}…">${esc(v)}</textarea>
+      <button class="btn sm offbtn ${o ? 'on' : ''}" title="Toggle day off 休息">OFF</button></div>`;
+  }).join('');
+  $('#dDeliv').value = DATA.delivery[curDate] || '';
+  document.querySelectorAll('#v-daily textarea').forEach(autoGrow);
+}
+$('#dPeople').addEventListener('input', e => {
+  if (e.target.tagName !== 'TEXTAREA') return;
+  const row = e.target.closest('.person'), n = row.dataset.n; autoGrow(e.target);
+  setTask(curDate, n, e.target.value);
+  row.classList.toggle('isoff', isOff(e.target.value)); row.querySelector('.offbtn').classList.toggle('on', isOff(e.target.value));
+  row.classList.toggle('missing', !e.target.value.trim() && ![0,6].includes(dow(curDate)));
+});
+$('#dPeople').addEventListener('click', e => {
+  const b = e.target.closest('.offbtn'); if (!b) return;
+  const n = b.closest('.person').dataset.n, v = getTask(curDate, n);
+  setTask(curDate, n, isOff(v) ? '' : 'OFF'); renderDaily();
+});
+$('#dDeliv').addEventListener('input', e => { autoGrow(e.target); const v = e.target.value.replace(/\s+$/,''); if (v) DATA.delivery[curDate] = v; else delete DATA.delivery[curDate]; saveDataSoon(); });
+$('#dDate').onchange = e => { if (e.target.value) { curDate = e.target.value; renderDaily(); } };
+$('#dPrev').onclick = () => { curDate = addDays(curDate, -1); renderDaily(); };
+$('#dNext').onclick = () => { curDate = addDays(curDate, 1); renderDaily(); };
+$('#dToday').onclick = () => { curDate = ymd(now()); renderDaily(); };
+$('#dCopy').onclick = () => {
+  let p = addDays(curDate, -1); for (let i = 0; i < 7 && [0,6].includes(dow(p)); i++) p = addDays(p, -1);
+  let n = 0; DATA.people.forEach(x => { const v = getTask(p, x.name); if (!getTask(curDate, x.name) && v && !isOff(v)) { setTask(curDate, x.name, v); n++; } });
+  renderDaily(); $('#saveState').textContent = n ? `Copied ${n} from ${p}` : `Nothing to copy from ${p}`;
+};
+
+/* ---------- week view ---------- */
+const weekStart = s => addDays(s, -dow(s));
+let curWeek = weekStart(ymd(now()));
+function renderWeek() {
+  const days = [...Array(7)].map((_, i) => addDays(curWeek, i)), today = ymd(now());
+  const notes = DATA.weekNotes[curWeek] || {}, hasNotes = Object.keys(notes).length > 0;
+  const d0 = parseYmd(days[0]), d6 = parseYmd(days[6]);
+  $('#wLabel').textContent = `${MON[d0.getMonth()]} ${d0.getDate()} – ${MON[d6.getMonth()]} ${d6.getDate()}, ${d6.getFullYear()}`;
+  let h = `<thead><tr><th>${MON[parseYmd(days[3]).getMonth()]}</th>` + days.map(d => { const w = dow(d); return `<th class="${d === today ? 'today' : ''} ${w%6===0 ? 'we' : ''}">${DOW[w]} ${parseYmd(d).getDate()}</th>`; }).join('') + (hasNotes ? '<th>Notes 备注</th>' : '') + '</tr></thead><tbody>';
+  for (const p of DATA.people) {
+    h += `<tr><td class="nm" style="--c:${p.color}">${esc(p.name)}<div class="badge ${p.team}">${p.team}</div></td>` + days.map(d => {
+      const v = getTask(d, p.name), w = dow(d), miss = !v && w%6 !== 0 && d <= today;
+      return `<td class="cell ${w%6===0 ? 'we' : ''} ${isOff(v) ? 'off' : ''} ${miss ? 'miss' : ''}" style="--t:${v && !isOff(v) ? tint(p.color) : 'transparent'}"><textarea rows="1" data-d="${d}" data-n="${esc(p.name)}">${esc(v)}</textarea></td>`;
+    }).join('') + (hasNotes ? `<td class="note">${esc(notes[p.name] || '')}</td>` : '') + '</tr>';
+  }
+  h += `<tr class="deliv"><td class="nm">交付 Delivery</td>` + days.map(d => `<td><textarea rows="1" data-d="${d}" data-deliv="1">${esc(DATA.delivery[d] || '')}</textarea></td>`).join('') + (hasNotes ? `<td class="note">${esc(notes.Delivery || '')}</td>` : '') + '</tr></tbody>';
+  $('#wTable').innerHTML = h;
+  document.querySelectorAll('#wTable textarea').forEach(autoGrow);
+}
+$('#wTable').addEventListener('input', e => {
+  const t = e.target; if (t.tagName !== 'TEXTAREA') return; autoGrow(t);
+  if (t.dataset.deliv) { const v = t.value.replace(/\s+$/,''); if (v) DATA.delivery[t.dataset.d] = v; else delete DATA.delivery[t.dataset.d]; saveDataSoon(); return; }
+  setTask(t.dataset.d, t.dataset.n, t.value);
+  const td = t.parentElement, p = person(t.dataset.n), v = t.value.trim();
+  td.classList.toggle('off', isOff(v)); td.classList.toggle('miss', false); td.style.setProperty('--t', v && !isOff(v) ? tint(p.color) : 'transparent');
+});
+$('#wPrev').onclick = () => { curWeek = addDays(curWeek, -7); renderWeek(); };
+$('#wNext').onclick = () => { curWeek = addDays(curWeek, 7); renderWeek(); };
+$('#wThis').onclick = () => { curWeek = weekStart(ymd(now())); renderWeek(); };
+
+/* ---------- settings ---------- */
+const TZ_LIST = ['Asia/Shanghai','Asia/Hong_Kong','Asia/Taipei','Asia/Tokyo','Asia/Singapore','America/Los_Angeles','America/Denver','America/Chicago','America/New_York','Europe/London','Europe/Paris','UTC'];
+function renderSettings() {
+  $('#sDeadlines').innerHTML = TEAMS.map(t => `<div class="row" style="margin-bottom:10px">
+     <b style="width:70px">${t}</b>
+     <input type="time" data-t="${t}" data-k="time" value="${esc(SET.deadlines[t].time)}">
+     <input type="text" list="tzl" data-t="${t}" data-k="tz" value="${esc(SET.deadlines[t].tz)}" style="flex:1;min-width:160px"></div>`).join('') +
+    `<datalist id="tzl">${TZ_LIST.map(z => `<option value="${z}">`).join('')}</datalist>`;
+  $('#sSkipWe').checked = SET.skipWeekends; $('#sHeads').value = SET.headsUpMin; $('#sSound').checked = SET.sound;
+  $('#sPeople').innerHTML = DATA.people.map((p, i) => `<div class="pi" data-i="${i}">
+     <input type="color" value="${p.color}" data-k="color" title="Color">
+     <input type="text" value="${esc(p.name)}" data-k="name" title="Rename">
+     <select data-k="team">${TEAMS.map(t => `<option ${t === p.team ? 'selected' : ''}>${t}</option>`).join('')}</select>
+     <span><button class="btn sm" data-mv="-1" title="Move up">↑</button> <button class="btn sm danger" data-del title="Remove">✕</button></span></div>`).join('');
+  const n = 'Notification' in window ? Notification.permission : 'unsupported';
+  $('#sNotifState').textContent = 'Browser notifications: ' + n + (n === 'denied' ? ' — allow them in your browser site settings.' : '');
+  $('#seedInfo').textContent = SEED ? `Original data: ${Object.keys(SEED.tasks).length} days parsed from the Google Sheet (${SEED.parsedAt}).` : '';
+}
+$('#sDeadlines').addEventListener('change', e => {
+  const { t, k } = e.target.dataset; if (!t) return;
+  if (k === 'tz' && !validTz(e.target.value)) { alert('Unknown time zone: ' + e.target.value + '\nUse an IANA name like Asia/Shanghai or America/Los_Angeles.'); e.target.value = SET.deadlines[t].tz; return; }
+  SET.deadlines[t][k] = e.target.value; saveSet(); tick(true);
+});
+$('#sSkipWe').onchange = e => { SET.skipWeekends = e.target.checked; saveSet(); tick(true); };
+$('#sHeads').onchange = e => { SET.headsUpMin = Math.max(0, +e.target.value || 0); saveSet(); tick(true); };
+$('#sSound').onchange = e => { SET.sound = e.target.checked; saveSet(); };
+$('#sNotif').onclick = async () => { if (!('Notification' in window)) return alert('This browser does not support notifications.'); await Notification.requestPermission(); renderSettings(); };
+$('#sTest').onclick = () => alertUser('late', 'Test alert', 'This is what a missed-deadline alert looks like.');
+$('#sPeople').addEventListener('change', e => {
+  const row = e.target.closest('.pi'); if (!row) return; const p = DATA.people[+row.dataset.i], k = e.target.dataset.k;
+  if (k === 'name') {
+    const nn = e.target.value.trim(); if (!nn || person(nn)) { e.target.value = p.name; return; }
+    for (const d in DATA.tasks) if (p.name in DATA.tasks[d]) { DATA.tasks[d][nn] = DATA.tasks[d][p.name]; delete DATA.tasks[d][p.name]; }
+    p.name = nn;
+  } else p[k] = e.target.value;
+  saveData(); tick(true);
+});
+$('#sPeople').addEventListener('click', e => {
+  const row = e.target.closest('.pi'); if (!row) return; const i = +row.dataset.i;
+  if (e.target.dataset.del !== undefined) { if (!confirm(`Remove ${DATA.people[i].name} from the team list? (Their past tasks are kept in the data.)`)) return; DATA.people.splice(i, 1); }
+  else if (e.target.dataset.mv && i > 0) { [DATA.people[i-1], DATA.people[i]] = [DATA.people[i], DATA.people[i-1]]; }
+  else return;
+  saveData(); renderSettings(); tick(true);
+});
+$('#sAdd').onclick = () => { const n = $('#sNewName').value.trim(); if (!n || person(n)) return; DATA.people.push({ name: n, team: $('#sNewTeam').value, color: PALETTE[DATA.people.length % PALETTE.length] }); $('#sNewName').value = ''; saveData(); renderSettings(); tick(true); };
+$('#sReset').onclick = () => { if (!confirm('Replace ALL data in this browser with the original sheet import? Export a backup first if unsure.')) return; DATA = freshData(); saveData(); renderSettings(); tick(true); };
+
+/* ---------- export / import ---------- */
+function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+$('#eJson').onclick = () => download(`team-schedule-backup-${ymd(now())}.json`, JSON.stringify({ app: 'storyverse-team-schedule', exportedAt: new Date().toISOString(), data: DATA, settings: SET }, null, 1), 'application/json');
+$('#iJson').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { const j = JSON.parse(await f.text()); const d = j.data || j; if (!d.people || !d.tasks) throw new Error('Not a team-schedule backup');
+    if (!confirm('Replace current data with this backup?')) return;
+    DATA = { stamps: {}, weekNotes: {}, delivery: {}, ...d }; if (j.settings) { SET = { ...SET, ...j.settings }; saveSet(); }
+    saveData(); renderAll(); alert('Backup imported.'); } catch (err) { alert('Import failed: ' + err.message); }
+  e.target.value = '';
+};
+$('#eCsv').onclick = () => {
+  const q = v => /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  const dates = [...Object.keys(DATA.tasks).filter(d => Object.keys(DATA.tasks[d]).length), ...Object.keys(DATA.delivery)].sort();
+  if (!dates.length) return alert('No data to export.');
+  const lines = ['Storyverse · 团队排班矩阵 Team Schedule', '', 'Legend,' + DATA.people.map(p => q(p.name)).join(',') + ',交付 Delivery,OFF', ''];
+  for (let w = weekStart(dates[0]); w <= dates[dates.length-1]; w = addDays(w, 7)) {
+    const days = [...Array(7)].map((_, i) => addDays(w, i)), notes = DATA.weekNotes[w] || {};
+    lines.push([MON[parseYmd(days[3]).getMonth()], ...days.map(d => `${DOW[dow(d)]} ${parseYmd(d).getDate()}`)].join(','));
+    for (const p of DATA.people) lines.push([q(p.name), ...days.map(d => q(getTask(d, p.name))), ...(notes[p.name] ? [q(notes[p.name])] : [])].join(','));
+    lines.push(['交付 Delivery', ...days.map(d => q(DATA.delivery[d] || ''))].join(','));
+    lines.push('');
+  }
+  download(`team-schedule-${ymd(now())}.csv`, '\ufeff' + lines.join('\r\n'), 'text/csv;charset=utf-8');
+};
+
+/* ---------- nav ---------- */
+function show(v) { ['daily','week','settings'].forEach(x => $('#v-' + x).classList.toggle('hidden', x !== v)); document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); if (v === 'week') renderWeek(); if (v === 'settings') renderSettings(); if (v === 'daily') renderDaily(); }
+$('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) show(b.dataset.v); };
+function renderAll() { renderDaily(); renderWeek(); renderSettings(); tick(true); }
+(() => { const p = new URLSearchParams(location.search); if (p.get('date')) curDate = p.get('date'); curWeek = weekStart(curDate); renderAll(); if (p.get('view')) show(p.get('view')); })();
+if (!localStorage.getItem(LS_DATA)) saveData();
+setInterval(() => tick(false), 1000); // countdown every 1s; deadline check runs every 30s inside tick
+</script>
+</body>
+</html>
