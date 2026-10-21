@@ -76,9 +76,54 @@ h2{font-size:16px;margin:0 0 12px}
 .hint{font-size:12px;color:var(--mute)}
 .hidden{display:none!important}
 code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
+/* projects */
+.pj{display:grid;grid-template-columns:28px minmax(140px,1.4fr) 140px 140px minmax(150px,1.2fr) minmax(120px,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
+.pj.head{font-size:12px;color:var(--mute);font-weight:600;padding-top:0}
+.pj input[type=color]{width:28px;height:28px;border:0;padding:0;background:none;cursor:pointer}
+.pj input[type=text],.pj input[type=date]{width:100%;min-width:0}
+.pj.flash{background:var(--accs);border-radius:8px;transition:background .3s}
+.pj .bad{border-color:var(--red)}
+.owners{position:relative}
+.owners summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:6px 9px;min-height:34px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:#fff}
+.owners summary::-webkit-details-marker{display:none}
+.owners .ph{color:var(--mute)}
+.owners .tag{font-size:12px;padding:1px 7px;border-radius:999px;background:var(--accs);color:var(--acc)}
+.owners .pop{position:absolute;z-index:15;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:8px;max-height:260px;overflow:auto;min-width:180px}
+.owners .pop label{display:flex;gap:6px;align-items:center;padding:3px 4px;white-space:nowrap;cursor:pointer}
+.pjlbl{display:none;font-size:11px;color:var(--mute)}
+/* month */
+.mhead{display:grid;grid-template-columns:repeat(7,1fr);font-size:12px;font-weight:600;color:var(--mute);border:1px solid var(--line);border-bottom:0;border-radius:var(--r) var(--r) 0 0;background:#f8f9fc}
+.mhead div{padding:6px 8px}
+.mgrid{border:1px solid var(--line);border-radius:0 0 var(--r) var(--r);overflow:hidden;background:#fff}
+.mw{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:auto;min-height:96px;border-bottom:1px solid var(--line);row-gap:3px;padding-bottom:6px}
+.mw:last-child{border-bottom:0}
+.mbg{border-right:1px solid var(--line);grid-row:1/-1}
+.mbg:nth-child(7){border-right:0}
+.mbg.we{background:#fafafa}.mbg.out{background:#f6f7fa}
+.mbg.today{background:var(--accs)}
+.mnum{padding:4px 8px 0;font-size:12px;color:var(--mute);grid-row:1;z-index:1}
+.mnum.out{color:#b8bdca}.mnum.today b{background:var(--acc);color:#fff;border-radius:999px;padding:1px 6px}
+.mbar{z-index:2;margin:0 3px;padding:2px 8px;border-radius:6px;color:#fff;font-size:12px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.mbar.cl{border-top-left-radius:0;border-bottom-left-radius:0;margin-left:0}
+.mbar.cr{border-top-right-radius:0;border-bottom-right-radius:0;margin-right:0}
+.mbar:hover{filter:brightness(1.08)}
+.mbar .ow{opacity:.85;margin-left:6px;font-size:11px}
+.mdl{z-index:1;margin:0 4px;font-size:11px;color:#92400e;background:#fff8e6;border-radius:4px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.mdl.tk{color:var(--mute);background:transparent;padding-top:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12px;color:var(--mute)}
+.legend span{cursor:pointer}
+@media (max-width:900px){
+ .pj{grid-template-columns:28px 1fr 1fr auto;row-gap:6px}
+ .pj .c-name{grid-column:2/4}.pj .c-del{grid-column:4;grid-row:1}
+ .pj .c-start{grid-column:1/3}.pj .c-end{grid-column:3/5}
+ .pj .c-own,.pj .c-notes{grid-column:1/-1}
+ .pj.head{display:none}.pjlbl{display:block}
+}
 @media (max-width:640px){
+ .mw{min-height:72px}.mnum{padding:2px 4px 0}.mbar{font-size:10px;padding:1px 4px;line-height:15px;margin:0 1px}.mbar .ow{display:none}
+ .mdl{font-size:10px;margin:0 1px;padding:0 2px}.mhead div{padding:4px}
  .person{grid-template-columns:1fr auto}.person .nm{flex-direction:row;gap:8px;align-items:baseline}.person textarea{grid-column:1/-1;grid-row:2}
- nav{margin-left:0;width:100%}nav button{flex:1}
+ nav{margin-left:0;width:100%;overflow-x:auto}nav button{flex:1;padding:6px 4px;font-size:13px;white-space:nowrap}nav button .zh{display:block;margin:0}
  .team .cd{font-size:17px}
 }
 </style>
@@ -89,6 +134,8 @@ code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
  <nav id="tabs">
   <button data-v="daily" class="on">Daily <span class="zh">每日</span></button>
   <button data-v="week">Week <span class="zh">周视图</span></button>
+  <button data-v="projects">Projects <span class="zh">项目</span></button>
+  <button data-v="month">Month <span class="zh">月视图</span></button>
   <button data-v="settings">Settings <span class="zh">设置</span></button>
  </nav>
 </div></header>
@@ -135,6 +182,40 @@ code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
   </div>
  </section>
 
+ <section id="v-projects" class="hidden">
+  <div class="card">
+   <div class="row" style="justify-content:space-between;margin-bottom:10px">
+    <h2 style="margin:0">项目列表 <span class="zh">Projects</span></h2>
+    <div class="row"><span class="status" id="pSave"></span><button class="btn pri" id="pAdd">+ 添加项目</button></div>
+   </div>
+   <div class="pj head"><span></span><span>项目名称</span><span>开始日期</span><span>结束日期</span><span>负责人</span><span>备注</span><span></span></div>
+   <div id="pList"></div>
+   <p class="hint" id="pEmpty">还没有项目，点击「+ 添加项目」。</p>
+   <p class="hint">修改会自动保存在本浏览器 (localStorage)，并包含在 Settings 的 JSON 导出/导入中。项目会显示在「月视图」里。</p>
+  </div>
+ </section>
+
+ <section id="v-month" class="hidden">
+  <div class="card">
+   <div class="row" style="justify-content:space-between;margin-bottom:12px">
+    <div class="row">
+     <button class="btn" id="mPrev" title="上个月">◀</button>
+     <strong id="mLabel" style="min-width:110px;text-align:center"></strong>
+     <button class="btn" id="mNext" title="下个月">▶</button>
+     <button class="btn" id="mToday">今天</button>
+    </div>
+    <div class="row">
+     <label class="hint"><input type="checkbox" id="mShowDeliv" checked> 显示交付 / 排班</label>
+     <button class="btn pri sm" id="mAdd">+ 添加项目</button>
+    </div>
+   </div>
+   <div class="mhead"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>
+   <div class="mgrid" id="mGrid"></div>
+   <div class="legend" id="mLegend"></div>
+   <p class="hint">点击项目条可跳到项目列表编辑 · 黄色 = 当天交付 · 灰字 = 当天有排班任务的人数</p>
+  </div>
+ </section>
+
  <section id="v-settings" class="hidden">
   <div class="sgrid">
    <div class="card">
@@ -171,6 +252,7 @@ code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
     <p class="hint">Data is stored in this browser only (localStorage). Export a JSON backup regularly; import it on another device to move your data.</p>
     <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
     <button class="btn danger" id="sReset">Reset all data to original sheet import</button>
+    <p class="hint">Projects 项目 are kept when resetting.</p>
     <p class="hint" id="seedInfo"></p>
    </div>
   </div>
@@ -199,7 +281,7 @@ const TEAMS_DEFAULT = [
   { id: 'Intern', name: 'Intern', label: '实习生', icon: '🎓', color: '#0d9488', time: '10:00', tz: 'America/Los_Angeles' },
 ];
 // Bump these when the defaults above change; old browsers get migrated on load (tasks are kept).
-const DATA_VERSION = 2, SETTINGS_VERSION = 2;
+const DATA_VERSION = 3, SETTINGS_VERSION = 2;
 const SETTINGS_DEFAULTS = { skipWeekends: true, headsUpMin: 30, sound: true };
 const PALETTE = ['#6366f1','#ec4899','#14b8a6','#f97316','#8b5cf6','#0ea5e9','#22c55e','#eab308','#ef4444','#06b6d4','#a855f7','#84cc16','#f43f5e','#3b82f6'];
 /* ================================================================== */
@@ -253,7 +335,7 @@ function freshData() {
   return {
     people: seedPeople().map((n, i) => ({ name: n, team: TEAM_DEFAULTS[n] || DEFAULT_TEAM, color: PALETTE[i % PALETTE.length] })),
     tasks: JSON.parse(JSON.stringify(s.tasks)), delivery: { ...s.delivery },
-    weekNotes: JSON.parse(JSON.stringify(s.weekNotes || {})), stamps: {}, version: DATA_VERSION,
+    weekNotes: JSON.parse(JSON.stringify(s.weekNotes || {})), stamps: {}, projects: [], version: DATA_VERSION,
   };
 }
 // Data migrations: run in order for any stored version below DATA_VERSION. Never touch tasks/delivery.
@@ -263,15 +345,17 @@ const DATA_MIGRATIONS = {
     for (const n of ['Kathy', 'Emily Y']) if (!d.people.some(p => p.name === n))
       d.people.push({ name: n, team: TEAM_DEFAULTS[n], color: PALETTE[d.people.length % PALETTE.length] });
   },
+  3: d => { if (!Array.isArray(d.projects)) d.projects = []; }, // v3: projects list
 };
 function migrateData(d) {
   let v = d.version || 1, changed = false;
   while (v < DATA_VERSION) { v++; if (DATA_MIGRATIONS[v]) DATA_MIGRATIONS[v](d); changed = true; }
+  if (!Array.isArray(d.projects)) d.projects = [];
   d.version = DATA_VERSION; return changed;
 }
 let DATA_MIGRATED = false;
 function loadData() {
-  try { const d = JSON.parse(localStorage.getItem(LS_DATA)); if (d && d.people) { const out = { stamps:{}, weekNotes:{}, delivery:{}, ...d }; DATA_MIGRATED = migrateData(out); return out; } } catch {}
+  try { const d = JSON.parse(localStorage.getItem(LS_DATA)); if (d && d.people) { const out = { stamps:{}, weekNotes:{}, delivery:{}, projects:[], ...d }; DATA_MIGRATED = migrateData(out); return out; } } catch {}
   return freshData();
 }
 let DATA = loadData();
@@ -517,7 +601,121 @@ $('#sPeople').addEventListener('click', e => {
   saveData(); renderSettings(); tick(true);
 });
 $('#sAdd').onclick = () => { const n = $('#sNewName').value.trim(); if (!n || person(n)) return; DATA.people.push({ name: n, team: $('#sNewTeam').value, color: PALETTE[DATA.people.length % PALETTE.length] }); $('#sNewName').value = ''; saveData(); renderSettings(); tick(true); };
-$('#sReset').onclick = () => { if (!confirm('Replace ALL data in this browser with the original sheet import? Export a backup first if unsure.')) return; DATA = freshData(); saveData(); renderSettings(); tick(true); };
+$('#sReset').onclick = () => { if (!confirm('Replace ALL data in this browser with the original sheet import? Export a backup first if unsure.')) return; const keepPj = DATA.projects || []; DATA = freshData(); DATA.projects = keepPj; saveData(); renderSettings(); tick(true); };
+
+/* ---------- projects ---------- */
+const pjSaveMsg = () => { $('#pSave').textContent = '✓ 已保存 ' + new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); };
+function savePj() { saveData(); pjSaveMsg(); }
+const newPjId = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const pjOwners = p => (p.owners || []).join('、');
+function ownerPicker(p) {
+  const names = DATA.people.map(x => x.name); const extra = (p.owners || []).filter(n => !names.includes(n));
+  const tags = (p.owners || []).length ? p.owners.map(n => `<span class="tag">${esc(n)}</span>`).join('') : '<span class="ph">选择负责人…</span>';
+  return `<details class="owners"><summary>${tags}</summary><div class="pop">` +
+    [...names, ...extra].map(n => `<label><input type="checkbox" data-own="${esc(n)}" ${(p.owners || []).includes(n) ? 'checked' : ''}>${person(n) ? `<span class="dot" style="background:${person(n).color}"></span>` : ''}${esc(n)}</label>`).join('') +
+    `<div class="row" style="margin-top:6px;flex-wrap:nowrap"><input type="text" data-ownnew placeholder="其他人…" style="width:110px"><button class="btn sm" data-ownadd>添加</button></div></div></details>`;
+}
+function renderProjects(focusId) {
+  const L = DATA.projects;
+  $('#pEmpty').classList.toggle('hidden', L.length > 0);
+  $('#pList').innerHTML = L.map(p => {
+    const bad = p.start && p.end && p.end < p.start;
+    return `<div class="pj" data-pid="${esc(p.id)}">
+    <input type="color" value="${esc(p.color)}" data-k="color" title="颜色">
+    <div class="c-name"><span class="pjlbl">项目名称</span><input type="text" data-k="name" value="${esc(p.name)}" placeholder="项目名称"></div>
+    <div class="c-start"><span class="pjlbl">开始日期</span><input type="date" data-k="start" value="${esc(p.start)}" class="${bad ? 'bad' : ''}"></div>
+    <div class="c-end"><span class="pjlbl">结束日期</span><input type="date" data-k="end" value="${esc(p.end)}" class="${bad ? 'bad' : ''}" title="${bad ? '结束日期早于开始日期' : ''}"></div>
+    <div class="c-own"><span class="pjlbl">负责人</span>${ownerPicker(p)}</div>
+    <div class="c-notes"><span class="pjlbl">备注</span><input type="text" data-k="notes" value="${esc(p.notes)}" placeholder="备注"></div>
+    <div class="c-del"><button class="btn sm" data-goto title="在月视图中查看">📅</button> <button class="btn sm danger" data-pdel title="删除">✕</button></div></div>`;
+  }).join('');
+  if (focusId) {
+    const row = document.querySelector(`.pj[data-pid="${CSS.escape(focusId)}"]`);
+    if (row) { row.classList.add('flash'); row.scrollIntoView({ block: 'center' }); row.querySelector('[data-k=name]').focus(); setTimeout(() => row.classList.remove('flash'), 1600); }
+  }
+}
+const pjById = id => DATA.projects.find(p => p.id === id);
+function addProject() {
+  const t = ymd(now());
+  const p = { id: newPjId(), name: '', start: t, end: addDays(t, 6), owners: [], notes: '', color: PALETTE[DATA.projects.length % PALETTE.length] };
+  DATA.projects.push(p); savePj(); show('projects'); renderProjects(p.id);
+}
+$('#pAdd').onclick = addProject; $('#mAdd').onclick = addProject;
+$('#pList').addEventListener('change', e => {
+  const row = e.target.closest('.pj'); if (!row) return; const p = pjById(row.dataset.pid); if (!p) return;
+  const k = e.target.dataset.k;
+  if (e.target.dataset.own !== undefined) {
+    const n = e.target.dataset.own; p.owners = (p.owners || []).filter(x => x !== n); if (e.target.checked) p.owners.push(n);
+    const order = DATA.people.map(x => x.name); p.owners.sort((a, b) => (order.indexOf(a) + 1 || 999) - (order.indexOf(b) + 1 || 999));
+    row.querySelector('.owners summary').innerHTML = p.owners.length ? p.owners.map(n => `<span class="tag">${esc(n)}</span>`).join('') : '<span class="ph">选择负责人…</span>';
+    savePj(); return;
+  }
+  if (!k) return;
+  p[k] = k === 'name' || k === 'notes' ? e.target.value.trim() : e.target.value;
+  if (k === 'start' && p.start && (!p.end || p.end < p.start)) p.end = p.start;
+  savePj(); if (k === 'start' || k === 'end') renderProjects();
+});
+$('#pList').addEventListener('input', e => { const k = e.target.dataset.k; if (k !== 'name' && k !== 'notes') return; const p = pjById(e.target.closest('.pj').dataset.pid); p[k] = e.target.value; $('#pSave').textContent = '保存中…'; clearTimeout(saveTimer); saveTimer = setTimeout(savePj, 400); });
+$('#pList').addEventListener('click', e => {
+  const row = e.target.closest('.pj'); if (!row) return; const p = pjById(row.dataset.pid);
+  if (e.target.closest('[data-pdel]')) { if (!confirm(`删除项目「${p.name || '未命名'}」？`)) return; DATA.projects = DATA.projects.filter(x => x !== p); savePj(); renderProjects(); }
+  else if (e.target.closest('[data-goto]')) { if (p.start) curMonth = p.start.slice(0, 7); show('month'); }
+  else if (e.target.closest('[data-ownadd]')) {
+    const inp = row.querySelector('[data-ownnew]'), n = inp.value.trim(); if (!n) return;
+    if (!(p.owners || []).includes(n)) { p.owners = [...(p.owners || []), n]; savePj(); }
+    renderProjects(); row.ownerOpen = true; const r2 = document.querySelector(`.pj[data-pid="${CSS.escape(p.id)}"] details`); if (r2) r2.open = true;
+  }
+});
+$('#pList').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.ownnew !== undefined) { e.preventDefault(); e.target.nextElementSibling.click(); } });
+document.addEventListener('click', e => { document.querySelectorAll('details.owners[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; }); });
+
+/* ---------- month view ---------- */
+let curMonth = ymd(now()).slice(0, 7); // 'YYYY-MM'
+const shiftMonth = (m, n) => { const d = new Date(+m.slice(0, 4), +m.slice(5) - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; };
+function renderMonth() {
+  const [Y, M] = curMonth.split('-').map(Number), first = `${curMonth}-01`, today = ymd(now());
+  const last = ymd(new Date(Y, M, 0)), gStart = weekStart(first), gEnd = addDays(weekStart(last), 6);
+  $('#mLabel').textContent = `${Y}年${M}月`;
+  const showDl = $('#mShowDeliv').checked;
+  // projects visible in this grid, sorted; lanes assigned once for the whole month so bars stay on one line across weeks
+  const vis = DATA.projects.filter(p => p.start && p.end && p.end >= p.start && p.start <= gEnd && p.end >= gStart)
+    .sort((a, b) => a.start.localeCompare(b.start) || b.end.localeCompare(a.end));
+  const laneEnd = [], lane = new Map();
+  for (const p of vis) { let i = laneEnd.findIndex(e => e < p.start); if (i < 0) i = laneEnd.length; laneEnd[i] = p.end; lane.set(p, i); }
+  const nL = laneEnd.length;
+  let h = '';
+  for (let w = gStart; w <= gEnd; w = addDays(w, 7)) {
+    const days = [...Array(7)].map((_, i) => addDays(w, i)), wEnd = days[6];
+    const rows = nL + 3; // 1 = day numbers, lanes, delivery, task count
+    h += `<div class="mw" style="grid-template-rows:auto ${'auto '.repeat(nL)}auto auto">`;
+    h += days.map((d, i) => `<div class="mbg ${d.slice(0,7) !== curMonth ? 'out' : ''} ${dow(d)%6===0 ? 'we' : ''} ${d === today ? 'today' : ''}" style="grid-column:${i+1};grid-row:1/${rows+1}"></div>`).join('');
+    h += days.map((d, i) => `<div class="mnum ${d.slice(0,7) !== curMonth ? 'out' : ''} ${d === today ? 'today' : ''}" style="grid-column:${i+1}"><b>${parseYmd(d).getDate()}</b></div>`).join('');
+    for (const p of vis) {
+      if (p.start > wEnd || p.end < w) continue;
+      const s = p.start < w ? w : p.start, e = p.end > wEnd ? wEnd : p.end;
+      const c0 = dow(s) + 1, span = dow(e) - dow(s) + 1;
+      const cl = p.start < w, cr = p.end > wEnd, ow = pjOwners(p);
+      h += `<div class="mbar ${cl ? 'cl' : ''} ${cr ? 'cr' : ''}" data-pid="${esc(p.id)}" style="grid-column:${c0}/span ${span};grid-row:${lane.get(p)+2};background:${esc(p.color)}" title="${esc(p.name || '未命名')} · ${p.start} → ${p.end}${ow ? ' · 负责人: ' + esc(ow) : ''}${p.notes ? ' · ' + esc(p.notes) : ''}">${cl ? '◂ ' : ''}${esc(p.name || '未命名')}${ow ? `<span class="ow">${esc(ow)}</span>` : ''}${cr ? ' ▸' : ''}</div>`;
+    }
+    if (showDl) days.forEach((d, i) => {
+      if (DATA.delivery[d]) h += `<div class="mdl" data-day="${d}" style="grid-column:${i+1};grid-row:${nL+2}" title="交付: ${esc(DATA.delivery[d])}">📦 ${esc(DATA.delivery[d])}</div>`;
+      const n = DATA.people.filter(p => { const v = getTask(d, p.name); return v.trim() && !isOff(v); }).length;
+      if (n) h += `<div class="mdl tk" data-day="${d}" style="grid-column:${i+1};grid-row:${nL+3}" title="${n} 人有排班任务 — 点击查看当天">👥 ${n}人</div>`;
+    });
+    h += '</div>';
+  }
+  $('#mGrid').innerHTML = h;
+  $('#mLegend').innerHTML = vis.map(p => `<span data-pid="${esc(p.id)}"><span class="dot" style="background:${esc(p.color)}"></span> ${esc(p.name || '未命名')} <small>${p.start.slice(5)}–${p.end.slice(5)}${pjOwners(p) ? ' · ' + esc(pjOwners(p)) : ''}</small></span>`).join('') || '本月没有项目。';
+}
+$('#mGrid').addEventListener('click', e => {
+  const b = e.target.closest('[data-pid]'); if (b) { show('projects'); renderProjects(b.dataset.pid); return; }
+  const d = e.target.closest('[data-day]'); if (d) { curDate = d.dataset.day; show('daily'); }
+});
+$('#mLegend').addEventListener('click', e => { const b = e.target.closest('[data-pid]'); if (b) { show('projects'); renderProjects(b.dataset.pid); } });
+$('#mPrev').onclick = () => { curMonth = shiftMonth(curMonth, -1); renderMonth(); };
+$('#mNext').onclick = () => { curMonth = shiftMonth(curMonth, 1); renderMonth(); };
+$('#mToday').onclick = () => { curMonth = ymd(now()).slice(0, 7); renderMonth(); };
+$('#mShowDeliv').onchange = renderMonth;
 
 /* ---------- export / import ---------- */
 function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
@@ -526,7 +724,7 @@ $('#iJson').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   try { const j = JSON.parse(await f.text()); const d = j.data || j; if (!d.people || !d.tasks) throw new Error('Not a team-schedule backup');
     if (!confirm('Replace current data with this backup?')) return;
-    DATA = { stamps: {}, weekNotes: {}, delivery: {}, ...d }; migrateData(DATA);
+    DATA = { stamps: {}, weekNotes: {}, delivery: {}, projects: [], ...d }; migrateData(DATA);
     if (j.settings) { const keep = SET.teams; SET = { ...SET, ...j.settings }; if (!Array.isArray(SET.teams) || (j.settings.version || 1) < 2) SET.teams = keep; delete SET.deadlines; SET.version = SETTINGS_VERSION; saveSet(); }
     saveData(); renderAll(); alert('Backup imported.'); } catch (err) { alert('Import failed: ' + err.message); }
   e.target.value = '';
@@ -547,10 +745,10 @@ $('#eCsv').onclick = () => {
 };
 
 /* ---------- nav ---------- */
-function show(v) { ['daily','week','settings'].forEach(x => $('#v-' + x).classList.toggle('hidden', x !== v)); document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); if (v === 'week') renderWeek(); if (v === 'settings') renderSettings(); if (v === 'daily') renderDaily(); }
+function show(v) { ['daily','week','projects','month','settings'].forEach(x => $('#v-' + x).classList.toggle('hidden', x !== v)); document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); if (v === 'week') renderWeek(); if (v === 'settings') renderSettings(); if (v === 'daily') renderDaily(); if (v === 'projects') renderProjects(); if (v === 'month') renderMonth(); }
 $('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) show(b.dataset.v); };
-function renderAll() { renderDaily(); renderWeek(); renderSettings(); tick(true); }
-(() => { const p = new URLSearchParams(location.search); if (p.get('date')) curDate = p.get('date'); curWeek = weekStart(curDate); renderAll(); if (p.get('view')) show(p.get('view')); })();
+function renderAll() { renderDaily(); renderWeek(); renderSettings(); renderProjects(); renderMonth(); tick(true); }
+(() => { const p = new URLSearchParams(location.search); if (p.get('date')) curDate = p.get('date'); curWeek = weekStart(curDate); curMonth = curDate.slice(0, 7); renderAll(); if (p.get('view')) show(p.get('view')); })();
 if (!localStorage.getItem(LS_DATA)) saveData();
 setInterval(() => tick(false), 1000); // countdown every 1s; deadline check runs every 30s inside tick
 </script>

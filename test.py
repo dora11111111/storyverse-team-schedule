@@ -50,5 +50,24 @@ with sync_playwright() as p:
     m=newpage(br.new_context(viewport={'width':390,'height':844})); m.goto(B+'?now=2026-08-03T16:40:00Z&date=2026-08-03'); m.wait_for_timeout(300)
     if m.is_visible('#toast'): m.click('#toastX')
     m.screenshot(path='screenshot-mobile.png',full_page=True)
+    # --- 3. projects + month view ---
+    ctx=br.new_context(viewport={'width':1280,'height':900},timezone_id='America/Los_Angeles'); pg=newpage(ctx)
+    pg.goto(B+'?now=2026-10-21T17:00:00Z&date=2026-10-21&view=projects'); pg.wait_for_timeout(300)
+    assert pg.is_visible('#pEmpty')
+    for nm,st,en in [('Alpha','2026-10-05','2026-10-20'),('Beta','2026-10-15','2026-11-10')]:
+        pg.click('#pAdd'); r=pg.locator('.pj[data-pid]').last
+        r.locator('[data-k=name]').fill(nm); r.locator('[data-k=start]').fill(st); r=pg.locator('.pj[data-pid]').last; r.locator('[data-k=end]').fill(en)
+        r=pg.locator('.pj[data-pid]').last; r.locator('summary').click(); r.locator('[data-own="Xueyuan"]').check(); pg.click('h2')
+    pg.wait_for_timeout(600)
+    d=pg.evaluate("JSON.parse(localStorage.getItem('storyverse.schedule.data.v1'))")
+    print('PROJECTS:',[(x['name'],x['start'],x['end'],x['owners']) for x in d['projects']]); assert len(d['projects'])==2 and d['projects'][1]['end']=='2026-11-10' and d['projects'][0]['owners']==['Xueyuan'] and d['version']==3
+    pg.click('#tabs [data-v=month]'); pg.wait_for_timeout(200)
+    bars=pg.locator('#mGrid .mbar'); print('OCT bars:',bars.count(), pg.inner_text('#mLabel')); assert bars.count()>=5
+    pg.click('#mNext'); print('NOV bars:',pg.locator('#mGrid .mbar').count(), pg.inner_text('#mLabel')); assert pg.locator('#mGrid .mbar').count()==2
+    pg.click('#mToday'); assert '10月' in pg.inner_text('#mLabel')
+    pg.locator('#mGrid .mbar').first.click(); pg.wait_for_timeout(200); assert pg.is_visible('#v-projects')
+    pg.once('dialog',lambda dl: dl.accept()); pg.locator('.pj[data-pid] [data-pdel]').first.click(); pg.wait_for_timeout(200)
+    assert len(pg.evaluate("JSON.parse(localStorage.getItem('storyverse.schedule.data.v1')).projects"))==1; print('delete ok')
+    ctx.close()
     br.close()
 print('ERRORS:',errs)
