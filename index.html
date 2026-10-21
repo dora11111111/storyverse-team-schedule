@@ -112,6 +112,12 @@ code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
 .mdl.tk{color:var(--mute);background:transparent;padding-top:0}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12px;color:var(--mute)}
 .legend span{cursor:pointer}
+/* sync */
+.sync{display:flex;gap:6px;align-items:center}
+#syncState{font-size:12px;padding:2px 8px;border-radius:999px;background:#eef0f5;color:var(--mute);white-space:nowrap}
+#syncState.ok{background:var(--grns);color:var(--grn)}#syncState.dirty{background:var(--ambs);color:var(--amb)}#syncState.err{background:var(--reds);color:var(--red)}
+#loginCard{max-width:620px;margin:0 auto 16px}
+#loginCard input{width:100%;max-width:460px}
 @media (max-width:900px){
  .pj{grid-template-columns:28px 1fr 1fr auto;row-gap:6px}
  .pj .c-name{grid-column:2/4}.pj .c-del{grid-column:4;grid-row:1}
@@ -131,6 +137,12 @@ code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
 <body>
 <header><div class="bar">
  <div class="brand">Storyverse Team Schedule<small>团队排班</small></div>
+ <div class="sync" id="syncBox">
+  <span id="syncState" title="云端同步状态">本地</span>
+  <button class="btn sm pri hidden" id="syncSave">保存</button>
+  <label class="hint hidden" id="autoWrap" title="修改后几秒自动保存到云端"><input type="checkbox" id="syncAuto"> 自动</label>
+  <button class="btn sm" id="syncLogin">登录</button>
+ </div>
  <nav id="tabs">
   <button data-v="daily" class="on">Daily <span class="zh">每日</span></button>
   <button data-v="week">Week <span class="zh">周视图</span></button>
@@ -141,6 +153,12 @@ code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
 </div></header>
 <div id="toast"><div class="in"><div id="toastMsg" style="flex:1"></div><button id="toastX">Dismiss</button></div></div>
 <main>
+ <section class="card hidden" id="loginCard">
+  <h3 style="margin-top:0">登录同步 <span class="zh">Sign in to sync</span></h3>
+  <p class="hint">登录后，排班、项目、成员和团队设置会保存到私有仓库 <b id="syncRepoName"></b> 的 <code id="syncPathName"></code>，所有登录的人看到同一份数据。不登录也可以照常使用（只保存在本浏览器）。</p>
+  <p class="hint">请粘贴一个对该仓库有「Contents: 读写」权限的 GitHub 令牌。令牌只保存在本浏览器（localStorage），只发送到 api.github.com。</p>
+  <div class="row"><input id="tok" type="password" placeholder="github_pat_... 或 ghp_..." autocomplete="off"><button class="btn pri" id="tokGo">登录</button><button class="btn" id="tokCancel">取消</button></div>
+ </section>
  <div id="banner"></div>
 
  <section id="v-daily">
@@ -249,7 +267,7 @@ code{background:#f1f3f9;padding:1px 5px;border-radius:4px;font-size:12px}
      <label class="btn">Import JSON<input type="file" id="iJson" accept=".json,application/json" hidden></label>
      <button class="btn" id="eCsv">Export CSV (sheet layout)</button>
     </div>
-    <p class="hint">Data is stored in this browser only (localStorage). Export a JSON backup regularly; import it on another device to move your data.</p>
+    <p class="hint">Not signed in: data is stored in this browser only (localStorage). Signed in (登录): data syncs to a private GitHub repo and is shared by everyone signed in; a local copy is kept too. Export a JSON backup regularly.</p>
     <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
     <button class="btn danger" id="sReset">Reset all data to original sheet import</button>
     <p class="hint">Projects 项目 are kept when resetting.</p>
@@ -374,9 +392,9 @@ const team = id => SET.teams.find(t => t.id === id) || SET.teams[0];
 const teamOf = p => team(p.team);
 const badge = (p, long) => { const t = teamOf(p); return `<span class="badge" style="color:${t ? t.color : 'inherit'}">${esc(t ? t.name : p.team)}${long ? ' team' : ''}</span>`; };
 let saveTimer;
-function saveData() { localStorage.setItem(LS_DATA, JSON.stringify(DATA)); $('#saveState').textContent = '✓ Saved ' + new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
+function saveData() { localStorage.setItem(LS_DATA, JSON.stringify(DATA)); if (window.syncTouched) syncTouched(); $('#saveState').textContent = '✓ Saved ' + new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
 function saveDataSoon() { $('#saveState').textContent = 'Saving…'; clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveData(); tick(true); }, 400); }
-const saveSet = () => localStorage.setItem(LS_SET, JSON.stringify(SET));
+const saveSet = () => { localStorage.setItem(LS_SET, JSON.stringify(SET)); if (window.syncTouched) syncTouched(); };
 saveSet(); if (DATA_MIGRATED) localStorage.setItem(LS_DATA, JSON.stringify(DATA));
 const getTask = (date, name) => (DATA.tasks[date] || {})[name] || '';
 function setTask(date, name, val) {
@@ -744,12 +762,99 @@ $('#eCsv').onclick = () => {
   download(`team-schedule-${ymd(now())}.csv`, '\ufeff' + lines.join('\r\n'), 'text/csv;charset=utf-8');
 };
 
+/* ---------- cloud sync (GitHub Contents API, private repo) ---------- */
+// Where shared data lives. Change owner/repo here to move it (e.g. to another account or an org).
+const SYNC = { owner: 'dora11111111', repo: 'storyverse-schedule-data', path: 'schedule.json', branch: 'main', api: 'https://api.github.com' };
+// Own token key — deliberately NOT the payroll app's key ('sv_payroll_token'), so tokens are never shared between the two sites.
+const LS_TOK = 'sv_schedule_token', LS_AUTO = 'sv_schedule_autosave', LS_SYNCSHA = 'sv_schedule_sha';
+// Settings that are shared with everyone; the rest (sound, heads-up minutes) stay per-browser.
+const SHARED_SET = ['teams', 'skipWeekends', 'version'];
+let syncSha = null, syncDirty = false, syncApplying = false, syncBusy = false, syncTimer = null, syncOn = false;
+const b64dec = b => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\n/g, '')), c => c.charCodeAt(0)));
+function b64enc(s) { const u = new TextEncoder().encode(s); let b = ''; for (let i = 0; i < u.length; i += 0x8000) b += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(b); }
+const tok = () => localStorage.getItem(LS_TOK);
+async function ghApi(method, body) {
+  const url = `${SYNC.api}/repos/${SYNC.owner}/${SYNC.repo}/contents/${SYNC.path}` + (method === 'GET' ? `?ref=${SYNC.branch}&t=${Date.now()}` : '');
+  const r = await fetch(url, { method, cache: 'no-store', headers: { Authorization: 'Bearer ' + tok(), Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, body: body && JSON.stringify(body) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) { const e = new Error(j.message || r.status); e.status = r.status; throw e; } return j;
+}
+function syncState(text, cls) { const e = $('#syncState'); e.textContent = text; e.className = cls || ''; }
+function syncUi() {
+  syncOn = !!tok();
+  $('#syncLogin').textContent = syncOn ? '退出' : '登录';
+  $('#syncSave').classList.toggle('hidden', !syncOn); $('#autoWrap').classList.toggle('hidden', !syncOn);
+  $('#syncAuto').checked = localStorage.getItem(LS_AUTO) !== '0';
+  if (!syncOn) syncState('本地', '');
+}
+const syncDoc = () => ({ app: 'storyverse-team-schedule', format: 1, savedAt: new Date().toISOString(), data: DATA, settings: Object.fromEntries(SHARED_SET.filter(k => k in SET).map(k => [k, SET[k]])) });
+function applyDoc(doc) {
+  const d = doc.data || {}; if (!d.people || !d.tasks) throw new Error('schedule.json 格式不正确');
+  syncApplying = true;
+  try {
+    DATA = { stamps: {}, weekNotes: {}, delivery: {}, projects: [], ...d }; migrateData(DATA);
+    if (doc.settings) { for (const k of SHARED_SET) if (k in doc.settings) SET[k] = doc.settings[k]; if (!Array.isArray(SET.teams) || !SET.teams.length) SET.teams = TEAMS_DEFAULT.map(t => ({ ...t })); SET.version = SETTINGS_VERSION; }
+    saveSet(); saveData(); renderAll(); if (!$('#v-projects').classList.contains('hidden')) renderProjects(); if (!$('#v-month').classList.contains('hidden')) renderMonth();
+  } finally { syncApplying = false; }
+}
+window.syncTouched = () => {
+  if (syncApplying || !syncOn) return;
+  syncDirty = true; syncState('未保存', 'dirty');
+  clearTimeout(syncTimer); if ($('#syncAuto').checked) syncTimer = setTimeout(() => syncSave(true), 4000);
+};
+function backupLocal(tag) { download(`team-schedule-${tag}-${ymd(now())}-${Date.now() % 100000}.json`, JSON.stringify({ app: 'storyverse-team-schedule', exportedAt: new Date().toISOString(), data: DATA, settings: SET }, null, 1), 'application/json'); }
+async function syncLoad(opts = {}) {
+  if (!tok()) return; syncBusy = true; syncState('同步中…', '');
+  try {
+    const j = await ghApi('GET'); syncSha = j.sha; localStorage.setItem(LS_SYNCSHA, j.sha);
+    applyDoc(JSON.parse(b64dec(j.content))); syncDirty = false;
+    syncState(opts.conflict ? '冲突 · 已载入最新' : '已同步', opts.conflict ? 'err' : 'ok');
+    $('#loginCard').classList.add('hidden');
+  } catch (e) {
+    if (e.status === 404) {
+      syncSha = null;
+      if (confirm(`云端还没有 ${SYNC.repo}/${SYNC.path}（或令牌无权访问该仓库）。\n要把本浏览器当前的数据上传为第一份云端数据吗？`)) { syncBusy = false; return syncSave(false, true); }
+      syncState('云端无文件', 'err');
+    } else if (e.status === 401) { syncState('令牌无效', 'err'); alert('令牌无效或已过期，请重新登录。'); localStorage.removeItem(LS_TOK); syncUi(); $('#loginCard').classList.remove('hidden'); }
+    else if (e.status === 403) { syncState('无权限', 'err'); alert(`该令牌没有 ${SYNC.owner}/${SYNC.repo} 的读写权限。`); }
+    else syncState('加载失败', 'err');
+  } finally { syncBusy = false; }
+}
+async function syncSave(auto, first) {
+  if (!tok() || syncBusy) { if (syncBusy && auto) { clearTimeout(syncTimer); syncTimer = setTimeout(() => syncSave(true), 2000); } return; }
+  clearTimeout(syncTimer); syncBusy = true; syncState('保存中…', ''); $('#syncSave').disabled = true;
+  const body = { message: first ? 'Initial schedule data upload' : (auto ? 'Auto-save schedule' : 'Update schedule'), content: b64enc(JSON.stringify(syncDoc(), null, 1)), branch: SYNC.branch };
+  if (syncSha) body.sha = syncSha;
+  try {
+    const j = await ghApi('PUT', body); syncSha = j.content.sha; localStorage.setItem(LS_SYNCSHA, syncSha); syncDirty = false; syncState('已同步', 'ok');
+  } catch (e) {
+    if (e.status === 409 || (e.status === 422 && /sha/i.test(e.message))) {
+      syncBusy = false; syncState('冲突', 'err');
+      alert('冲突：别人已经修改了云端数据，你的修改没有覆盖它。\n已把你本地的版本下载为备份 JSON，现在载入云端最新版本。请在最新版本上重新修改。');
+      backupLocal('conflict-backup'); return syncLoad({ conflict: true });
+    }
+    syncState(e.status === 401 ? '令牌无效' : e.status === 403 || e.status === 404 ? '无权限' : '保存失败', 'err');
+    if (!auto) alert('保存失败：' + e.message);
+  } finally { syncBusy = false; $('#syncSave').disabled = false; }
+}
+$('#syncSave').onclick = () => syncSave(false);
+$('#syncAuto').onchange = e => { localStorage.setItem(LS_AUTO, e.target.checked ? '1' : '0'); if (e.target.checked && syncDirty) syncTouched(); };
+$('#syncLogin').onclick = () => {
+  if (tok()) { if (syncDirty && !confirm('还有未保存到云端的修改，确定退出吗？（修改仍保留在本浏览器）')) return; localStorage.removeItem(LS_TOK); localStorage.removeItem(LS_SYNCSHA); syncSha = null; syncDirty = false; syncUi(); return; }
+  $('#loginCard').classList.toggle('hidden'); $('#tok').focus();
+};
+$('#tokCancel').onclick = () => $('#loginCard').classList.add('hidden');
+$('#tokGo').onclick = () => { const t = $('#tok').value.trim(); if (!t) return; localStorage.setItem('storyverse.schedule.data.prelogin', JSON.stringify(DATA)); localStorage.setItem(LS_TOK, t); $('#tok').value = ''; syncUi(); syncLoad(); };
+$('#tok').onkeydown = e => { if (e.key === 'Enter') $('#tokGo').click(); };
+$('#syncRepoName').textContent = `${SYNC.owner}/${SYNC.repo}`; $('#syncPathName').textContent = SYNC.path;
+window.addEventListener('beforeunload', e => { if (syncOn && syncDirty) { e.preventDefault(); e.returnValue = ''; } });
+
 /* ---------- nav ---------- */
 function show(v) { ['daily','week','projects','month','settings'].forEach(x => $('#v-' + x).classList.toggle('hidden', x !== v)); document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); if (v === 'week') renderWeek(); if (v === 'settings') renderSettings(); if (v === 'daily') renderDaily(); if (v === 'projects') renderProjects(); if (v === 'month') renderMonth(); }
 $('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) show(b.dataset.v); };
 function renderAll() { renderDaily(); renderWeek(); renderSettings(); renderProjects(); renderMonth(); tick(true); }
 (() => { const p = new URLSearchParams(location.search); if (p.get('date')) curDate = p.get('date'); curWeek = weekStart(curDate); curMonth = curDate.slice(0, 7); renderAll(); if (p.get('view')) show(p.get('view')); })();
 if (!localStorage.getItem(LS_DATA)) saveData();
+syncUi(); if (tok()) syncLoad();
 setInterval(() => tick(false), 1000); // countdown every 1s; deadline check runs every 30s inside tick
 </script>
 </body>

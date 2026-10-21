@@ -17,3 +17,9 @@ Open `index.html` in a browser. Data saves to the browser's local storage; use E
 
 Rebuild from the Google Sheet: download it to `../sheet.csv`, then run `python3 parse_sheet.py && python3 build.py`.
 Test: `python3 -m http.server 8765` in this folder, then `python3 test.py` (Playwright + Chrome; `?now=<ISO>` simulates time).
+
+## Cloud sync (optional)
+Click **登录** and paste a GitHub token with Contents read/write on the private data repo
+(`SYNC` constant in `template.html`, currently `dora11111111/storyverse-schedule-data`, file `schedule.json`).
+The token is kept in this browser's localStorage under `sv_schedule_token` (separate from the payroll app).
+Not signed in = local-only, exactly as before.

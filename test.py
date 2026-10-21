@@ -1,5 +1,5 @@
 # Headless test: python3 -m http.server 8765 (in this folder), then python3 test.py
-import json
+import json, base64
 from playwright.sync_api import sync_playwright
 B='http://localhost:8765/index.html'
 errs=[]
@@ -68,6 +68,43 @@ with sync_playwright() as p:
     pg.locator('#mGrid .mbar').first.click(); pg.wait_for_timeout(200); assert pg.is_visible('#v-projects')
     pg.once('dialog',lambda dl: dl.accept()); pg.locator('.pj[data-pid] [data-pdel]').first.click(); pg.wait_for_timeout(200)
     assert len(pg.evaluate("JSON.parse(localStorage.getItem('storyverse.schedule.data.v1')).projects"))==1; print('delete ok')
+    ctx.close()
+    # --- 4. cloud sync with mocked GitHub API ---
+    srv={'doc':None,'sha':None,'n':0,'calls':[]}
+    def gh(route):
+        r=route.request; srv['calls'].append((r.method,r.headers.get('authorization')))
+        assert 'storyverse-schedule-data/contents/schedule.json' in r.url and 'storyverse-hr' not in r.url
+        if r.method=='GET':
+            if srv['doc'] is None: return route.fulfill(status=404,json={'message':'Not Found'})
+            return route.fulfill(json={'sha':srv['sha'],'content':base64.b64encode(srv['doc'].encode()).decode()})
+        b=json.loads(r.post_data)
+        if b.get('sha')!=srv['sha']: return route.fulfill(status=409,json={'message':'sha mismatch'})
+        srv['n']+=1; srv['sha']='s%d'%srv['n']; srv['doc']=base64.b64decode(b['content']).decode()
+        return route.fulfill(status=201 if srv['n']==1 else 200,json={'content':{'sha':srv['sha']}})
+    ctx=br.new_context(viewport={'width':1280,'height':900},accept_downloads=True); ctx.route('https://api.github.com/**',gh); pg=newpage(ctx)
+    pg.on('dialog',lambda dl: dl.accept())
+    pg.goto(B+'?view=projects'); pg.wait_for_timeout(300)
+    assert pg.inner_text('#syncState')=='本地' and pg.inner_text('#syncLogin')=='登录' and not srv['calls']; print('SYNC logged out: no API calls')
+    pg.click('#syncLogin'); pg.fill('#tok','TESTTOKEN'); pg.click('#tokGo'); pg.wait_for_timeout(600)
+    assert srv['n']==1 and json.loads(srv['doc'])['data']['people'], srv; print('SYNC first upload ok, state:',pg.inner_text('#syncState'))
+    assert pg.evaluate("localStorage.getItem('sv_schedule_token')")=='TESTTOKEN' and pg.evaluate("localStorage.getItem('sv_payroll_token')") is None
+    pg.uncheck('#syncAuto'); pg.click('#pAdd'); pg.locator('.pj[data-pid] [data-k=name]').last.fill('Synced'); pg.locator('.pj[data-pid] [data-k=name]').last.press('Tab'); pg.wait_for_timeout(600)
+    assert pg.inner_text('#syncState')=='未保存'; pg.click('#syncSave'); pg.wait_for_timeout(500)
+    assert pg.inner_text('#syncState')=='已同步' and json.loads(srv['doc'])['data']['projects'][0]['name']=='Synced'; print('SYNC manual save ok')
+    pg.check('#syncAuto'); pg.locator('.pj[data-pid] [data-k=notes]').last.fill('auto'); pg.locator('.pj[data-pid] [data-k=notes]').last.press('Tab'); pg.wait_for_timeout(5000)
+    assert json.loads(srv['doc'])['data']['projects'][0]['notes']=='auto'; print('SYNC auto-save ok')
+    # someone else saves -> our save conflicts
+    d=json.loads(srv['doc']); d['data']['projects'][0]['name']='OtherPerson'; srv['doc']=json.dumps(d); srv['sha']='other'
+    pg.uncheck('#syncAuto'); pg.locator('.pj[data-pid] [data-k=name]').last.fill('Mine'); pg.locator('.pj[data-pid] [data-k=name]').last.press('Tab'); pg.wait_for_timeout(600)
+    with pg.expect_download() as dl: pg.click('#syncSave')
+    pg.wait_for_timeout(600)
+    print('SYNC conflict state:',pg.inner_text('#syncState'),'| backup:',dl.value.suggested_filename)
+    assert '冲突' in pg.inner_text('#syncState') and json.loads(srv['doc'])['data']['projects'][0]['name']=='OtherPerson'
+    assert pg.locator('.pj[data-pid] [data-k=name]').last.input_value()=='OtherPerson'
+    # reopen -> loads from repo
+    pg2=newpage(ctx); pg2.goto(B+'?view=projects'); pg2.wait_for_timeout(600); assert pg2.locator('.pj[data-pid] [data-k=name]').last.input_value()=='OtherPerson' and pg2.inner_text('#syncState')=='已同步'
+    assert all(a=='Bearer TESTTOKEN' for _,a in srv['calls'])
+    pg2.click('#syncLogin'); assert pg2.inner_text('#syncState')=='本地' and pg2.evaluate("localStorage.getItem('sv_schedule_token')") is None; print('SYNC reload + logout ok')
     ctx.close()
     br.close()
 print('ERRORS:',errs)
